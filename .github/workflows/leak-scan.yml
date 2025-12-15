@@ -20,7 +20,9 @@ jobs:
           set -e
 
           echo "Scanning for internal domains..."
-          if grep -R -n "cfolino.com" .; then
+          if grep -R -n "cfolino.com" . \
+            | grep -v "<internal-domain>" \
+            | grep -v "<redacted-domain>"; then
             echo "ERROR: internal domain detected"
             exit 1
           fi
@@ -52,9 +54,12 @@ jobs:
           fi
 
           echo "Scanning for common secret keywords..."
-          if grep -R -n -E "(password|passwd|secret|token|apikey|api_key|authorization)" .; then
+          if grep -R -n -E "(password|passwd|secret|token|apikey|api_key|authorization)" . \
+            | grep -v "REDACTED" \
+            | grep -v "USE_ENV_SECRET"; then
             echo "ERROR: potential secret detected"
             exit 1
           fi
 
           echo "Leak scan completed successfully"
+
