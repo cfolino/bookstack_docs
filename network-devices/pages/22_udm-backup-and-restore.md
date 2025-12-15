@@ -48,7 +48,7 @@ This section documents the automated backup and manual restore process for the U
 
 ---
 
-✅ **Post-Restore Validation:**
+**Post-Restore Validation:**
 
 - Confirm UniFi Controller accessibility via web UI.
 - Validate site, device, and user settings were restored.
