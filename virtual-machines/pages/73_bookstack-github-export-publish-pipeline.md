@@ -1,4 +1,4 @@
-This page documents the automated pipeline used to export internal BookStack documentation, sanitize sensitive data, and publish a public-safe mirror to GitHub.
+This page documents the **automated** pipeline used to export internal BookStack documentation, sanitize sensitive data, and publish a public-safe mirror to GitHub.
 
 The internal BookStack instance remains the authoritative source of truth.
 GitHub is treated as a read-only mirror for portfolio and reference purposes.
