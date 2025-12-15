@@ -6,7 +6,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
 
 - **Backup Location:** `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups`
 - **Storage Pool:** backup_cifs share
-- **Retention Policy:** 
+- **Retention Policy:**
  - System configuration backups: Last backup only
  - Full image backups: Last backup only
 - **Schedules:**
@@ -123,10 +123,10 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
   ```bash
   # Navigate to backup location
   cd /srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups
-  
+
   # Find latest backup
   LATEST_BACKUP=$(ls -1dt os_backup_*/ | head -1)
-  
+
   # Restore critical directories
   rsync -aAXHv "$LATEST_BACKUP"etc/ /etc/
   rsync -aAXHv "$LATEST_BACKUP"var/lib/openmediavault/ /var/lib/openmediavault/
@@ -137,7 +137,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
   ```bash
   # Identify latest package list
   LATEST_PKG=$(ls -1t manual_packages_*.txt | head -1)
-  
+
   # Update and reinstall
   apt update
   apt install $(cat "$LATEST_PKG")
@@ -167,10 +167,10 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
   ```bash
   # Navigate to image backup location
   cd /srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups/full_image_backups
-  
+
   # Find latest backup
   LATEST_IMAGE=$(ls -1t omv_full_backup_*.fsa | head -1)
-  
+
   # Restore image to target partition
   fsarchiver restfs "$LATEST_IMAGE" id=0,dest=/dev/sdd2
   ```
@@ -179,19 +179,19 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
   ```bash
   # Mount restored filesystem
   mount /dev/sdd2 /mnt/target
-  
+
   # Update /etc/fstab if UUIDs changed
   blkid >> /mnt/target/etc/fstab.new
   # Edit fstab.new manually and replace original when done
   ```
-  
+
   ```bash
   # Prepare chroot environment
   mount --bind /dev /mnt/target/dev
   mount --bind /proc /mnt/target/proc
   mount --bind /sys /mnt/target/sys
   chroot /mnt/target
-  
+
   # Install and update GRUB
   grub-install /dev/sdd
   update-grub

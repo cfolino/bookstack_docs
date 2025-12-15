@@ -91,7 +91,7 @@ if [ "$BACKUPS_ON_OMV" -gt 3 ]; then
     # Remove the oldest backup if there are more than 3 backups
     OLD_BACKUPS=$(ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.15.225 \
     "ls -t $BACKUP_DIR | tail -n +4")
-    
+
     echo "Removing old backups on OMV..." | tee -a "$LOG_FILE"
     for BACKUP in $OLD_BACKUPS; do
         ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.15.225 \

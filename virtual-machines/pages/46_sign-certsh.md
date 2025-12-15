@@ -2,24 +2,24 @@
 
 ---
 
-## Purpose  
+## Purpose
 Non-interactive script to sign Certificate Signing Requests (CSRs) using the internal OpenSSL CA. Designed for automation pipelines where no manual passphrase entry is required (when the CA key is not encrypted).
 
 ---
 
-## Functions  
+## Functions
 
-- **Parameter Validation:** Checks that CSR input file and certificate output path are provided.  
-- **CSR Signing:** Uses `openssl ca` with specified configuration to sign the CSR.  
+- **Parameter Validation:** Checks that CSR input file and certificate output path are provided.
+- **CSR Signing:** Uses `openssl ca` with specified configuration to sign the CSR.
 - **Batch Mode:** Runs OpenSSL CA in batch mode to suppress interactive prompts (except for passphrase if encrypted).
 
 ---
 
-## Process Flow  
+## Process Flow
 
-1. Validate input parameters (`<csr-file>` and `<cert-outfile>` and `<hostname>` and `<ip address>`).  
-2. Call OpenSSL CA with `-batch` and appropriate config to sign the CSR.  
-3. Output the signed certificate to the specified location.  
+1. Validate input parameters (`<csr-file>` and `<cert-outfile>` and `<hostname>` and `<ip address>`).
+2. Call OpenSSL CA with `-batch` and appropriate config to sign the CSR.
+3. Output the signed certificate to the specified location.
 4. Exit with usage message if parameters are missing.
 
 ---

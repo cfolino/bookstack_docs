@@ -1,5 +1,5 @@
-Version: v1.0  
-Scope: Centralized UniFi device + UDM Pro reboot automation via Ansible, driven by Semaphore.  
+Version: v1.0
+Scope: Centralized UniFi device + UDM Pro reboot automation via Ansible, driven by Semaphore.
 Environment: ansible.cfolino.com, semaphore.cfolino.com, udm.cfolino.com
 
 ---
@@ -8,11 +8,11 @@ Environment: ansible.cfolino.com, semaphore.cfolino.com, udm.cfolino.com
 
 This document explains the complete configuration, execution flow, and verification procedures for automating UniFi device and UDM Pro reboots using:
 
-- Ansible playbooks  
-- The `unifi_reboot` role  
-- Inventory-driven variable management  
-- Semaphore as an execution and scheduling engine  
-- Notification delivery using the `notify_email` role  
+- Ansible playbooks
+- The `unifi_reboot` role
+- Inventory-driven variable management
+- Semaphore as an execution and scheduling engine
+- Notification delivery using the `notify_email` role
 
 All dry-run logic has been removed from the workflow. A dry-run may still be performed manually using Ansible `--check` mode.
 
@@ -239,13 +239,13 @@ playbooks/reboot_unifi.yml
 
 ## 7. Execution Flow
 
-1. Query UniFi API for device list  
-2. Filter active non-UDM devices  
-3. Reboot each device via UniFi API  
-4. Reboot UDM Pro via SSH  
-5. Wait for UDM SSH port to return  
-6. Generate HTML summary  
-7. Send email notification  
+1. Query UniFi API for device list
+2. Filter active non-UDM devices
+3. Reboot each device via UniFi API
+4. Reboot UDM Pro via SSH
+5. Wait for UDM SSH port to return
+6. Generate HTML summary
+7. Send email notification
 
 ---
 
@@ -278,12 +278,12 @@ ansible-playbook playbooks/notify_test.yml
 
 ### 9.1 Semaphore
 
-1. Open the template  
-2. Create Task  
-3. Leave "Extra CLI Args" empty  
-4. Execute  
-5. Review output  
-6. Verify email summary  
+1. Open the template
+2. Create Task
+3. Leave "Extra CLI Args" empty
+4. Execute
+5. Review output
+6. Verify email summary
 
 ### 9.2 Manual CLI Run
 
@@ -295,10 +295,10 @@ ansible-playbook playbooks/reboot_unifi.yml -vv
 
 ## 10. Expected Runtime Output Sequence
 
-1. Reboot UniFi devices via API  
-2. Reboot UDM Pro via SSH  
-3. Wait for UDM SSH on port 22  
-4. Build and email summary  
+1. Reboot UniFi devices via API
+2. Reboot UDM Pro via SSH
+3. Wait for UDM SSH on port 22
+4. Build and email summary
 
 ---
 

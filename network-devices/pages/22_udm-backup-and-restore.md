@@ -8,7 +8,7 @@ This section documents the automated backup and manual restore process for the U
 - **Log File:** `/home/udmsvc/backup_log.txt`
 - **Execution:** Daily via cron (12 PM)
 - **Retention:** All backups retained
-- **Destination:**  
+- **Destination:**
   `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/udm_backups`
 
 ---

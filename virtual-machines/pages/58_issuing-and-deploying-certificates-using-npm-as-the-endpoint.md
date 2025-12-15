@@ -1,7 +1,7 @@
 ---
 
 ## Purpose
-Automates the **generation**, **signing**, and **deployment** of SSL certificates from the internal Certificate Authority (CA) to the **Nginx Proxy Manager (NPM)** host using **Ansible**.  
+Automates the **generation**, **signing**, and **deployment** of SSL certificates from the internal Certificate Authority (CA) to the **Nginx Proxy Manager (NPM)** host using **Ansible**.
 Ensures each host’s **FQDN** receives a valid internal certificate and that **NPM automatically restarts** with the new credentials.
 
 ---
@@ -51,20 +51,20 @@ pbs : ok=1 changed=0 unreachable=0 failed=0
 ```
 
 ### 5. Add Proxy Host and Dummy Certificate in NPM
-1. Log in to **https://npm.cfolino.com**  
-2. Go to **Hosts → Proxy Hosts → Add Proxy Host**  
-3. Configure:  
-   - Domain: `pbs.cfolino.com`  
-   - Forward Hostname/IP: `pbs.internal.cfolino.com`  
-   - Forward Port: `8007`  
+1. Log in to **https://npm.cfolino.com**
+2. Go to **Hosts → Proxy Hosts → Add Proxy Host**
+3. Configure:
+   - Domain: `pbs.cfolino.com`
+   - Forward Hostname/IP: `pbs.internal.cfolino.com`
+   - Forward Port: `8007`
    - Block Common Exploits: Yes
    - WebSocket Support: Yes
-   - Access List: `internal-only`  
-   - SSL: *none yet*  
-4. Save the host.  
-5. Upload the pre-generated dummy cert and key stored at `A:\ssh`:  
-   - SSL Certificates → Add SSL Certificate → Custom  
-   - Upload `dummy.crt` and `dummy.key`  
+   - Access List: `internal-only`
+   - SSL: *none yet*
+4. Save the host.
+5. Upload the pre-generated dummy cert and key stored at `A:\ssh`:
+   - SSL Certificates → Add SSL Certificate → Custom
+   - Upload `dummy.crt` and `dummy.key`
    - Assign it to the new proxy host.
 
 ### 6. Determine Certificate ID
@@ -170,17 +170,17 @@ Browser test: open `https://pbs.cfolino.com` and verify the certificate chain sh
 ---
 
 ## Overview
-- Uses **Ansible** to orchestrate certificate generation on the **CA host** and deployment to the **NPM Docker host**.  
-- Automates CSR creation, signing via internal CA, and secure certificate transfer.  
-- Supports **one-host-at-a-time** operation.  
-- Automatically restarts the **NPM Docker container**.  
+- Uses **Ansible** to orchestrate certificate generation on the **CA host** and deployment to the **NPM Docker host**.
+- Automates CSR creation, signing via internal CA, and secure certificate transfer.
+- Supports **one-host-at-a-time** operation.
+- Automatically restarts the **NPM Docker container**.
 - Fully **non-interactive**, key-based authentication.
 
 ---
 
 ## Prerequisites
-- The `ansible` user exists on both **CA** and **NPM** hosts.  
-- Passwordless SSH access is configured.  
+- The `ansible` user exists on both **CA** and **NPM** hosts.
+- Passwordless SSH access is configured.
 - The **CA server** (`ca.cfolino.com`) has the directory structure:
 
 ```
@@ -190,7 +190,7 @@ Browser test: open `https://pbs.cfolino.com` and verify the certificate chain sh
 /home/ca/ca/signed-certs/
 ```
 
-- The **NPM host** runs Docker and Nginx Proxy Manager.  
+- The **NPM host** runs Docker and Nginx Proxy Manager.
 - The `ansible` user belongs to both `docker` and `npm` groups.
 
 ---
