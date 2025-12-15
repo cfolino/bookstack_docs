@@ -18,17 +18,19 @@ jobs:
         run: |
           set -e
 
-          echo "Scanning for internal domains (non-markdown files only)..."
+          echo "Scanning for internal domains (non-markdown, non-ci files only)..."
           if grep -R -n "cfolino.com" . \
             --exclude-dir=.git \
+            --exclude-dir=.github \
             --exclude="*.md"; then
             echo "ERROR: internal domain detected outside documentation"
             exit 1
           fi
 
-          echo "Scanning for internal email addresses (non-markdown files only)..."
+          echo "Scanning for internal email addresses (non-markdown, non-ci files only)..."
           if grep -R -n -E "[A-Za-z0-9._%+-]+@cfolino\.com" . \
             --exclude-dir=.git \
+            --exclude-dir=.github \
             --exclude="*.md"; then
             echo "ERROR: internal email detected outside documentation"
             exit 1
@@ -54,9 +56,10 @@ jobs:
             exit 1
           fi
 
-          echo "Scanning for private keys (non-markdown files only)..."
+          echo "Scanning for private keys (non-markdown, non-ci files only)..."
           if grep -R -n -E "BEGIN .*PRIVATE KEY" . \
             --exclude-dir=.git \
+            --exclude-dir=.github \
             --exclude="*.md"; then
             echo "ERROR: private key material detected outside documentation"
             exit 1
