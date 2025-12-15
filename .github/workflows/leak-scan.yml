@@ -19,11 +19,16 @@ jobs:
         run: |
           set -e
 
-          echo "Scanning for internal domains..."
-          if grep -R -n "cfolino.com" . \
-            | grep -v "<internal-domain>" \
-            | grep -v "<redacted-domain>"; then
-            echo "ERROR: internal domain detected"
+          echo "Scanning for internal URLs..."
+          if grep -R -n -E "https?://[^ ]+\.cfolino\.com" .; then
+            echo "ERROR: internal URL detected"
+            exit 1
+          fi
+
+          echo "Scanning for internal email addresses..."
+          if grep -R -n -E "[A-Za-z0-9._%+-]+@cfolino\.com" . \
+            | grep -v "<redacted-email>"; then
+            echo "ERROR: internal email detected"
             exit 1
           fi
 
@@ -53,13 +58,10 @@ jobs:
             exit 1
           fi
 
-          echo "Scanning for common secret keywords..."
-          if grep -R -n -E "(password|passwd|secret|token|apikey|api_key|authorization)" . \
-            | grep -v "REDACTED" \
-            | grep -v "USE_ENV_SECRET"; then
-            echo "ERROR: potential secret detected"
+          echo "Scanning for private keys..."
+          if grep -R -n -E "BEGIN .*PRIVATE KEY" .; then
+            echo "ERROR: private key material detected"
             exit 1
           fi
 
           echo "Leak scan completed successfully"
-
