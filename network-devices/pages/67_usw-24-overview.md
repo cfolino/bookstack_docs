@@ -2,7 +2,7 @@
 
 * Platform: Ubiquiti UniFi Switch 24
 
-* Management IP: 192.168.10.10
+* Management IP: 192.168.x.x
 
 * VLAN: 1
 

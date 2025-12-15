@@ -75,7 +75,7 @@ This script performs deterministic redaction of sensitive data.
 ### Example redactions
 
 ```text
-192.168.10.44              → 192.168.x.x
+192.168.x.x              → 192.168.x.x
 <internal-host>            → omv.internal
 <redacted-email>         → <redacted-email>
 dev-disk-by-uuid-<uuid>    → dev-disk-by-uuid-<uuid-redacted>

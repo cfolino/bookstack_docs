@@ -6,6 +6,6 @@
 
 * Management URL: <internal-host>:8007
 
-* Management IP: 192.168.15.129
+* Management IP: 192.168.x.x
 
 * VLAN: 15

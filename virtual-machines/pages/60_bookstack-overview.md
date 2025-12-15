@@ -6,7 +6,7 @@
 
 * Management URL: <internal-host>:8080
 
-* Management IP: 192.168.30.10
+* Management IP: 192.168.x.x
 
 * VLAN: 30
 

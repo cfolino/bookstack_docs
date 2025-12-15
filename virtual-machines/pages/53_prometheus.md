@@ -25,11 +25,11 @@ scrape_configs:
   - job_name: 'node-exporter'
     static_configs:
       - targets:
-        - '192.168.10.12:9100'   # grafana VM
-        - '192.168.10.128:9100'  # proxmox host
-        - '192.168.10.129:9100'  # pbs
-        - '192.168.15.225:9100'  # omv
-        - '192.168.30.20:9100'   # ansible control node
+        - '192.168.x.x:9100'   # grafana VM
+        - '192.168.x.x:9100'  # proxmox host
+        - '192.168.x.x:9100'  # pbs
+        - '192.168.x.x:9100'  # omv
+        - '192.168.x.x:9100'   # ansible control node
 ```
 
 ---

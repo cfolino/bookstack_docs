@@ -4,7 +4,7 @@
 
 * Hostname: <internal-host>
 
-* Management IP: 192.168.10.1
+* Management IP: 192.168.x.x
 
 * VLAN: 1
 

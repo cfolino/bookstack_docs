@@ -6,7 +6,7 @@
 
 * Hostname: <internal-host>
 
-* Management IP: 192.168.15.225
+* Management IP: 192.168.x.x
 
 * VLAN: 15
 

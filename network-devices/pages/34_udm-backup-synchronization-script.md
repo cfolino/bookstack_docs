@@ -29,7 +29,7 @@ This script synchronizes UniFi Dream Machine (UDM) automatic backups from the UD
 #!/bin/bash
 
 # UDM details
-UDM_IP="192.168.10.1"              # UDM IP address
+UDM_IP="192.168.x.x"              # UDM IP address
 UDM_BACKUP_DIR="/data/unifi/data/backup/autobackup"  # UDM backup directory
 OMV_BACKUP_DIR="/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/udm_backups"  # OMV backup directory
 

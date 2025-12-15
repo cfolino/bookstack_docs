@@ -6,7 +6,7 @@
 
 * Management URL: <internal-host>/admin
 
-* Management IP: 192.168.10.46
+* Management IP: 192.168.x.x
 
 * VLAN: 1
 

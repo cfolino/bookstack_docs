@@ -62,7 +62,7 @@ Run the signing script:
 Example:
 
 ```bash
-/home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt <internal-host> 192.168.10.128
+/home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt <internal-host> 192.168.x.x
 ```
 
 ---

@@ -30,7 +30,7 @@ In the **Pi-hole GUI** (`Local DNS → DNS Records`):
 
 | Domain | IP | Purpose |
 |---------|----|----------|
-| `<internal-host>` | `192.168.10.100` | Points to NPM proxy host |
+| `<internal-host>` | `192.168.x.x` | Points to NPM proxy host |
 | `<internal-host>` | `192.168.15.x` | Points directly to PBS VM |
 
 Verify DNS resolution:
@@ -98,13 +98,13 @@ npm_cert_map:
 ```
 
 ### 8. Open Firewall Between NPM and Target Host
-Allow NPM (192.168.10.100) to reach PBS (192.168.15.x) over the service port.
+Allow NPM (192.168.x.x) to reach PBS (192.168.15.x) over the service port.
 
 | Field | Value |
 |--------|-------|
 | Action | Accept |
 | Description | Allow NPM to reach PBS |
-| Source | 192.168.10.100 |
+| Source | 192.168.x.x |
 | Destination | 192.168.15.x |
 | Protocol | TCP |
 | Port | 8007 |

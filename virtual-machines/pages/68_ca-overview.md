@@ -1,7 +1,7 @@
 * Role: Certificate Authority (CA)
 * Platform: Ubuntu 24.04 Server
 * Hostname: <internal-host>
-* Management IP: 192.168.10.99
+* Management IP: 192.168.x.x
 * VLAN: 1
 
 Notes:
@@ -10,9 +10,9 @@ Notes:
 
 * Uses bridged networking via vmbr0
 
-* DNS servers: 192.168.10.44, 192.168.10.46
+* DNS servers: 192.168.x.x, 192.168.x.x
 
-* Gateway: 192.168.10.1
+* Gateway: 192.168.x.x
 
 * Internal domain: <internal-domain>
 
