@@ -1,4 +1,4 @@
-This system ensures your VMs only start after your ZFS pool is confirmed healthy, and allows you to configure VM boot order and delay to avoid boot storms or dependency issues.
+This system ensures VMs only start after the ZFS pool is confirmed healthy.  It also allows configuration of VM boot order and delay to avoid boot storms or dependency issues.
 
 ---
 

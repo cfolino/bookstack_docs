@@ -84,7 +84,7 @@ sudo bash ansible-user-init.sh
 
 ### Validation
 
-From your Ansible control node, run:
+From the Ansible control node, run:
 
 ```bash
 ssh -i ~/.ssh/id_ansible ansible@<target-vm-ip>

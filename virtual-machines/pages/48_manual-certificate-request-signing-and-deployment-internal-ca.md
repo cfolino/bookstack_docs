@@ -1,5 +1,5 @@
 ## Purpose
-Generate a Certificate Signing Request (CSR) with full Distinguished Name (DN) fields for submission to an internal Certificate Authority (CA). Ensures certificates issued include essential identification fields (CN, O, OU) and are trusted across your environment.
+Generate a Certificate Signing Request (CSR) with full Distinguished Name (DN) fields for submission to an internal Certificate Authority (CA). Ensures certificates issued include essential identification fields (CN, O, OU) and are trusted across the environment.
 
 ---
 

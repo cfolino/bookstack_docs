@@ -111,8 +111,7 @@ Use the Alertmanager web UI to:
 
 * Grouping prevents spam from similar alerts (e.g., multiple nodes failing).
 * `repeat_interval` controls how often a repeated alert is sent.
-* TLS, auth, and mail secrets should not be stored plaintext in production environments.
-* Consider reverse proxy + internal TLS via your private CA (`<internal-host>`).
+
 
 ---
 
