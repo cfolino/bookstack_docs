@@ -14,10 +14,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Scan for private keys
+      # Detect actual private key material, not documentation references
+      - name: Scan for private key material
         run: |
-          if grep -R -n -E "BEGIN .*PRIVATE KEY" .; then
-            echo "Private key material detected"
+          if grep -R -n -E "BEGIN ([A-Z ]+ )?PRIVATE KEY" . \
+            | grep -vE "\.(md|txt)"; then
+            echo "Private key material detected outside documentation"
             exit 1
           fi
 
@@ -53,7 +55,7 @@ jobs:
             exit 1
           fi
 
-      - name: Scan for common cloud/API tokens
+      - name: Scan for common cloud and API tokens
         run: |
           if grep -R -n -E "AKIA[0-9A-Z]{16}" .; then
             echo "AWS access key detected"
