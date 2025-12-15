@@ -4,8 +4,8 @@ This runbook outlines backup and recovery procedures for the Proxmox VE (PVE) en
 
 ## Backup Summary
 
-- **Backup Location on OMV:** `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/pve_backups`
-- **Primary Offload Target:** OMV server `omv.cfolino.com` (192.168.15.225)
+- **Backup Location on OMV:** `/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/pve_backups`
+- **Primary Offload Target:** OMV server `omv.internal` (192.168.x.x)
 - **Retention Policy:**
   - System backups: Last 3 backups
   - ZFS backups: Last full backup only (monthly rotation)

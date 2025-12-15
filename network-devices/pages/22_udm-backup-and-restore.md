@@ -9,7 +9,7 @@ This section documents the automated backup and manual restore process for the U
 - **Execution:** Daily via cron (12 PM)
 - **Retention:** All backups retained
 - **Destination:**
-  `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/udm_backups`
+  `/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/udm_backups`
 
 ---
 
@@ -18,19 +18,19 @@ This section documents the automated backup and manual restore process for the U
 1. **Identify the latest backup archive** (e.g., `autobackup_xxxx-xx-xx.unf`) in:
 
     ```bash
-    /srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/udm_backups/
+    /srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/udm_backups/
     ```
 
 2. **Transfer the backup to the UDM** using `scp`:
 
     ```bash
-    scp -i /home/udmsvc/.ssh/omv_to_udm_backup autobackup_xxxx-xx-xx.unf root@192.168.10.1:/mnt/data/unifi/backup/
+    scp -i /home/udmsvc/.ssh/omv_to_udm_backup autobackup_xxxx-xx-xx.unf root@192.168.x.x:/mnt/data/unifi/backup/
     ```
 
 3. **SSH into the UDM**:
 
     ```bash
-    ssh -i /home/udmsvc/.ssh/omv_to_udm_backup root@192.168.10.1
+    ssh -i /home/udmsvc/.ssh/omv_to_udm_backup root@192.168.x.x
     ```
 
 4. **Restore via the UniFi Controller web interface**:

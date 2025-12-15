@@ -1,4 +1,4 @@
-**Location:** `/home/ca/ca/sign-cert.sh` on the CA VM (`ca.cfolino.com`, IP `192.168.10.99`)
+**Location:** `/home/ca/ca/sign-cert.sh` on the CA VM (`ca.internal`, IP `192.168.x.x`)
 
 ---
 

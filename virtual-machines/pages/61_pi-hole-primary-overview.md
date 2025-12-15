@@ -2,11 +2,11 @@
 
 * Platform: Pi-hole
 
-* Hostname: pihole.cfolino.com
+* Hostname: pihole.internal
 
-* Management URL: pihole.cfolino.com/admin
+* Management URL: pihole.internal/admin
 
-* Management IP: 192.168.10.44
+* Management IP: 192.168.x.x
 
 * VLAN: 1
 

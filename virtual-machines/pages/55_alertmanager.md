@@ -30,11 +30,11 @@ route:
 receivers:
   - name: 'default-receiver'
     email_configs:
-      - to: 'alerts@cfolino.com'
-        from: 'alertmanager@cfolino.com'
-        smarthost: 'mail.cfolino.com:587'
-        auth_username: 'alertmanager@cfolino.com'
-        auth_identity: 'alertmanager@cfolino.com'
+      - to: 'alerts@<redacted-email>'
+        from: 'alertmanager@<redacted-email>'
+        smarthost: 'mail.internal:587'
+        auth_username: 'alertmanager@<redacted-email>'
+        auth_identity: 'alertmanager@<redacted-email>'
         auth_password: 'USE_ENV_SECRET'
         require_tls: true
 ```
@@ -47,7 +47,7 @@ receivers:
 
 | Component   | Value                                  |
 | ----------- | -------------------------------------- |
-| UI URL      | `http://alertmanager.cfolino.com:9093` |
+| UI URL      | `http://alertmanager.internal:9093` |
 | Config file | `/etc/alertmanager/alertmanager.yml`   |
 | Systemd svc | `alertmanager.service`                 |
 | Logs        | `journalctl -u alertmanager`           |
@@ -112,7 +112,7 @@ Use the Alertmanager web UI to:
 * Grouping prevents spam from similar alerts (e.g., multiple nodes failing).
 * `repeat_interval` controls how often a repeated alert is sent.
 * TLS, auth, and mail secrets should not be stored plaintext in production environments.
-* Consider reverse proxy + internal TLS via your private CA (`alertmanager.cfolino.com`).
+* Consider reverse proxy + internal TLS via your private CA (`alertmanager.internal`).
 
 ---
 

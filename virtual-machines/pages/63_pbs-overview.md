@@ -2,10 +2,10 @@
 
 * Platform: Proxmox Backup Server
 
-* Hostname: pbs.cfolino.com
+* Hostname: pbs.internal
 
-* Management URL: pbs.cfolino.com:8007
+* Management URL: pbs.internal:8007
 
-* Management IP: 192.168.15.129
+* Management IP: 192.168.x.x
 
 * VLAN: 15

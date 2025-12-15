@@ -4,9 +4,9 @@
 
 * Services: SMB/NFS Shares
 
-* Hostname: omv.cfolino.com
+* Hostname: omv.internal
 
-* Management IP: 192.168.15.225
+* Management IP: 192.168.x.x
 
 * VLAN: 15
 

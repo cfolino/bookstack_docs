@@ -4,7 +4,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
 
 ## Backup Summary
 
-- **Backup Location:** `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups`
+- **Backup Location:** `/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/omv_backups`
 - **Storage Pool:** backup_cifs share
 - **Retention Policy:**
  - System configuration backups: Last backup only
@@ -82,7 +82,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
 ---
 
 ## Restore Summary
-- **Backup Location:** `/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups`
+- **Backup Location:** `/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/omv_backups`
 - **Storage Pool:** backup_cifs share
 - **Recovery Types:**
  - Configuration restore: Partial system recovery
@@ -122,7 +122,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
 3. **Restore Configuration Files:**
   ```bash
   # Navigate to backup location
-  cd /srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups
+  cd /srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/omv_backups
 
   # Find latest backup
   LATEST_BACKUP=$(ls -1dt os_backup_*/ | head -1)
@@ -166,7 +166,7 @@ This runbook outlines backup and recovery procedures for the OpenMediaVault (OMV
 3. **Restore Filesystem Image:**
   ```bash
   # Navigate to image backup location
-  cd /srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups/full_image_backups
+  cd /srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/omv_backups/full_image_backups
 
   # Find latest backup
   LATEST_IMAGE=$(ls -1t omv_full_backup_*.fsa | head -1)
