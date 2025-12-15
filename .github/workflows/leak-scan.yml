@@ -53,12 +53,11 @@ jobs:
             exit 1
           fi
 
-          echo "Scanning for private keys (excluding docs)..."
+          echo "Scanning for private keys (non-markdown files only)..."
           if grep -R -n -E "BEGIN .*PRIVATE KEY" . \
-            | grep -v "```" \
-            | grep -v "<example>" \
-            | grep -v "<redacted>"; then
-            echo "ERROR: private key material detected"
+            --exclude-dir=.git \
+            --exclude="*.md"; then
+            echo "ERROR: private key material detected outside documentation"
             exit 1
           fi
 
