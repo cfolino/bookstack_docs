@@ -1,7 +1,7 @@
-This page documents the automated pipeline used to export internal BookStack documentation, sanitize sensitive data, and publish a **public-safe mirror** to GitHub.
+This page documents the automated pipeline used to export internal BookStack documentation, sanitize sensitive data, and publish a public-safe mirror to GitHub.
 
-The internal BookStack instance remains the **authoritative source of truth**.
-GitHub is treated as a **read-only mirror** for portfolio and reference purposes.
+The internal BookStack instance remains the authoritative source of truth.
+GitHub is treated as a read-only mirror for portfolio and reference purposes.
 
 ---
 
@@ -9,9 +9,10 @@ GitHub is treated as a **read-only mirror** for portfolio and reference purposes
 
 The pipeline is intentionally split into clear, single-responsibility stages:
 
-1. **Export** – Lossless extraction from BookStack
-2. **Sanitize** – Deterministic redaction of sensitive data
-3. **Publish** – Version-controlled push to GitHub with safety gates
+1. Export – Lossless extraction from BookStack
+2. Sanitize – Deterministic redaction of sensitive data
+3. Publish – Version-controlled push to GitHub with safety gates
+4. Verify – Continuous integration leak scanning in GitHub
 
 All steps are automated to prevent accidental disclosure.
 
@@ -30,14 +31,14 @@ All steps are automated to prevent accidental disclosure.
     └── (sanitized GitHub mirror)
 ```
 
-- Timestamped export directories are **immutable**
-- `bookstack_export_sanitized` is the **only** directory under Git version control
+- Timestamped export directories are immutable
+- bookstack_export_sanitized is the only directory under Git version control
 
 ---
 
 ## Step 1: Export (Lossless)
 
-**Script:** `bookstack-export.sh`
+Script: `bookstack-export.sh`
 
 This script:
 - Uses the BookStack API
@@ -45,8 +46,7 @@ This script:
 - Preserves Markdown exactly as authored
 - Writes output to a timestamped directory
 
-**Important design choice:**
-No sanitization or redaction happens at this stage. The export must remain a faithful internal copy.
+No sanitization occurs at this stage.
 
 ```bash
 ./bookstack-export.sh
@@ -56,23 +56,23 @@ No sanitization or redaction happens at this stage. The export must remain a fai
 
 ## Step 2: Sanitize (Redaction)
 
-**Script:** `sanitize-export.sh`
+Script: `sanitize-export.sh`
 
-This script operates only on the sanitized mirror directory and performs **deterministic redaction**.
+This script performs deterministic redaction of sensitive data.
 
-### What is redacted
+### Redacted content
 - Internal domains
 - Internal email addresses
 - RFC1918 IP addresses
 - Disk UUIDs and UUID-based mount paths
 
-### What is preserved
+### Preserved content
 - Directory structure
 - Script logic
+- Public keys
 - Standard Linux paths
-- Public keys (never private keys)
 
-### Example Redactions
+### Example redactions
 
 ```text
 192.168.x.x              → 192.168.x.x
@@ -81,25 +81,19 @@ alerts@<redacted-email>         → <redacted-email>
 dev-disk-by-uuid-<uuid>    → dev-disk-by-uuid-<uuid-redacted>
 ```
 
-The sanitizer is:
-- Idempotent
-- Safe to run multiple times
-- Designed for auditability via `git diff`
-
 ---
 
 ## Step 3: Publish (Authoritative)
 
-**Script:** `publish-bookstack-export.sh`
+Script: `publish-bookstack-export.sh`
 
-This is the **only script that should ever push to GitHub**.
+This is the only script allowed to push content to GitHub.
 
-It performs the following steps in order:
-
+It performs the following:
 1. Rsync latest export into the sanitized directory
 2. Run the sanitizer automatically
-3. Enforce safety gates (fail if anything unsafe remains)
-4. Commit changes to Git
+3. Enforce safety gates
+4. Commit changes
 5. Force-update the GitHub mirror
 
 ```bash
@@ -108,37 +102,30 @@ It performs the following steps in order:
 
 ---
 
-## Safety Gates
+## Step 4: CI Leak Scanning (GitHub)
 
-Publishing is aborted if any of the following are detected:
-- Internal domains
-- Internal email addresses
-- Unsanitized RFC1918 IP addresses
+A GitHub Actions workflow runs on every push and pull request to validate that no sensitive data is present.
 
-This guarantees unsafe content **cannot be pushed**, even by mistake.
+### What the CI scan enforces
+- No private key material
+- No internal domains
+- No internal email addresses (redacted placeholders allowed)
+- No raw RFC1918 IP addresses
+- No cloud API keys or bearer tokens
+
+### Purpose
+
+This provides a second, external safety net in addition to local sanitization and publish-time checks.
+
+Even if local safeguards are bypassed or modified, GitHub will refuse unsafe content.
 
 ---
 
 ## Repository README Handling
 
-`README.md` is treated as **repository-owned**, not export-owned.
+README.md is repository-owned metadata and is excluded from export synchronization.
 
-- It explains that the repository is a mirror
-- It is excluded from rsync deletion
-- It persists across exports
-
-This keeps contextual metadata separate from documentation content.
-
----
-
-## GitHub Repository Model
-
-- GitHub is a **one-way mirror**
-- No direct edits are made in GitHub
-- History may be force-updated intentionally
-- Sanitized content only
-
-This model avoids drift and ensures consistency.
+It explains that the repository is a mirror and persists across exports.
 
 ---
 
@@ -149,27 +136,16 @@ This model avoids drift and ensures consistency.
 ./publish-bookstack-export.sh
 ```
 
-No manual sanitization steps are required.
-
----
-
-## Design Goals
-
-- Preserve internal documentation accuracy
-- Prevent accidental data disclosure
-- Enable public sharing without risk
-- Maintain clean version history
-- Keep the system simple and auditable
+CI verification runs automatically after every push.
 
 ---
 
 ## Summary
 
 This pipeline ensures:
+- Internal documentation remains complete and accurate
+- Public documentation is safe by construction
+- Redaction is automated and verifiable
+- External CI enforces an additional safety boundary
 
-- Internal BookStack remains precise and complete
-- Public GitHub content is safe by construction
-- Redaction is automated, consistent, and verifiable
-- Documentation can be shared confidently
-
-The separation between **authoring**, **sanitization**, and **publishing** is intentional and enforced.
+The separation between authoring, sanitization, publishing, and verification is intentional.
