@@ -1,6 +1,6 @@
 * Role: Certificate Authority (CA)
 * Platform: Ubuntu 24.04 Server
-* Hostname: ca.cfolino.com
+* Hostname: <internal-host>
 * Management IP: 192.168.10.99
 * VLAN: 1
 
@@ -14,6 +14,6 @@ Notes:
 
 * Gateway: 192.168.10.1
 
-* Internal domain: *.cfolino.com
+* Internal domain: <internal-domain>
 
 * Default user: ca

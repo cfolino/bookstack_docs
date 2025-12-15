@@ -1,6 +1,6 @@
 Version: v1.0
 Scope: Centralized UniFi device + UDM Pro reboot automation via Ansible, driven by Semaphore.
-Environment: ansible.cfolino.com, semaphore.cfolino.com, udm.cfolino.com
+Environment: <internal-host>, <internal-host>, <internal-host>
 
 ---
 
@@ -92,57 +92,57 @@ all:
       ansible_connection: local
 
     pve:
-      ansible_host: pve.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     pbs:
-      ansible_host: pbs.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     ansible:
-      ansible_host: ansible.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     pihole:
-      ansible_host: pihole.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     pihole-backup:
-      ansible_host: pihole-backup.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     ca:
-      ansible_host: ca.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     bookstack:
-      ansible_host: bookstack.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     omv:
-      ansible_host: omv.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     grafana:
-      ansible_host: grafana.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     npm:
-      ansible_host: npm.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 
     udmpro:
-      ansible_host: udm.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 ```
@@ -161,17 +161,17 @@ Example:
 
 ```
 # UniFi API configuration
-udm_host: "https://udm.cfolino.com"
+udm_host: "https://internal.example"
 udm_api_key: "{{ vault_udm_api_key }}"
-udm_ssh_host: "udm.cfolino.com"
+udm_ssh_host: "<internal-host>"
 udm_ssh_user: "ansible"
 
 # SMTP configuration
 smtp_host: "smtp.gmail.com"
 smtp_port: 587
-smtp_user: "ansible@cfolino.com"
+smtp_user: "<redacted-email>"
 smtp_secure: "starttls"
-notify_to: "you@cfolino.com"
+notify_to: "<redacted-email>"
 smtp_pass: "{{ vault_smtp_pass }}"
 ```
 
@@ -255,7 +255,7 @@ playbooks/reboot_unifi.yml
 
 ```
 ansible localhost -m uri -a \
-"url=https://udm.cfolino.com/proxy/network/api/s/default/stat/device \
+"url=https://internal.example/proxy/network/api/s/default/stat/device \
 method=GET validate_certs=true \
 headers='{\"X-API-Key\":\"<KEY>\"}'" -vvv
 ```
@@ -263,7 +263,7 @@ headers='{\"X-API-Key\":\"<KEY>\"}'" -vvv
 ### 8.2 SSH Connectivity Test
 
 ```
-ssh ansible@udm.cfolino.com "echo ok"
+ssh ansible@<internal-host> "echo ok"
 ```
 
 ### 8.3 SMTP Test

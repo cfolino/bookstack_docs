@@ -11,7 +11,7 @@ Prometheus collects and stores time-series metrics from various homelab componen
 * Scrapes metrics from targets such as Node Exporter, Pi-hole Exporter, Pushgateway, etc.
 * Exposes its own metrics on port `9090`.
 * Configuration is defined in `prometheus.yml`.
-* Integrated with Grafana via HTTP data source (`http://localhost:9090` or `http://grafana.cfolino.com:9090`).
+* Integrated with Grafana via HTTP data source (`http://localhost:9090` or `https://internal.example`).
 
 ---
 
@@ -38,7 +38,7 @@ scrape_configs:
 
 | Component   | Value                                |
 | ----------- | ------------------------------------ |
-| UI URL      | `http://prometheus.cfolino.com:9090` |
+| UI URL      | `https://internal.example` |
 | Config file | `/etc/prometheus/prometheus.yml`     |
 | Systemd svc | `prometheus.service`                 |
 | Logs        | `journalctl -u prometheus`           |

@@ -76,8 +76,8 @@ This script performs deterministic redaction of sensitive data.
 
 ```text
 192.168.10.44              → 192.168.x.x
-omv.cfolino.com            → omv.internal
-alerts@cfolino.com         → <redacted-email>
+<internal-host>            → omv.internal
+<redacted-email>         → <redacted-email>
 dev-disk-by-uuid-<uuid>    → dev-disk-by-uuid-<uuid-redacted>
 ```
 

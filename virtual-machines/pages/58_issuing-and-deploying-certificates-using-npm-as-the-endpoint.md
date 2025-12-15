@@ -15,7 +15,7 @@ Edit `/home/ansible/ansible/inventory/inventory.yml` and ensure the host exists 
 all:
   hosts:
     pbs:
-      ansible_host: pbs.internal.cfolino.com
+      ansible_host: <internal-host>
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 ```
@@ -30,14 +30,14 @@ In the **Pi-hole GUI** (`Local DNS → DNS Records`):
 
 | Domain | IP | Purpose |
 |---------|----|----------|
-| `pbs.cfolino.com` | `192.168.10.100` | Points to NPM proxy host |
-| `pbs.internal.cfolino.com` | `192.168.15.x` | Points directly to PBS VM |
+| `<internal-host>` | `192.168.10.100` | Points to NPM proxy host |
+| `<internal-host>` | `192.168.15.x` | Points directly to PBS VM |
 
 Verify DNS resolution:
 
 ```bash
-dig +short pbs.cfolino.com
-dig +short pbs.internal.cfolino.com
+dig +short <internal-host>
+dig +short <internal-host>
 ```
 ### 4. Verify SSH Connectivity (Semaphore)
 Run the `ping.yml` playbook in Semaphore to confirm passwordless access.
@@ -51,11 +51,11 @@ pbs : ok=1 changed=0 unreachable=0 failed=0
 ```
 
 ### 5. Add Proxy Host and Dummy Certificate in NPM
-1. Log in to **https://npm.cfolino.com**
+1. Log in to **https://internal.example**
 2. Go to **Hosts → Proxy Hosts → Add Proxy Host**
 3. Configure:
-   - Domain: `pbs.cfolino.com`
-   - Forward Hostname/IP: `pbs.internal.cfolino.com`
+   - Domain: `<internal-host>`
+   - Forward Hostname/IP: `<internal-host>`
    - Forward Port: `8007`
    - Block Common Exploits: Yes
    - WebSocket Support: Yes
@@ -85,16 +85,16 @@ Edit `/home/ansible/ansible/inventory/host_vars/npm.yml`:
 
 ```
 npm_cert_map:
-  grafana.cfolino.com: 3
-  npm.cfolino.com: 7
-  pve.cfolino.com: 4
-  bookstack.cfolino.com: 6
-  prometheus.cfolino.com: 8
-  node-exporter.cfolino.com: 9
-  pihole.cfolino.com: 10
-  semaphore.cfolino.com: 11
-  omv.cfolino.com: 13
-  pbs.cfolino.com: 14
+  <internal-host>: 3
+  <internal-host>: 7
+  <internal-host>: 4
+  <internal-host>: 6
+  <internal-host>: 8
+  <internal-host>: 9
+  <internal-host>: 10
+  <internal-host>: 11
+  <internal-host>: 13
+  <internal-host>: 14
 ```
 
 ### 8. Open Firewall Between NPM and Target Host
@@ -112,7 +112,7 @@ Allow NPM (192.168.10.100) to reach PBS (192.168.15.x) over the service port.
 Confirm connectivity:
 
 ```bash
-curl -Ik https://pbs.internal.cfolino.com:8007
+curl -Ik https://internal.example
 ```
 
 ### 9. Run Certificate Playbook
@@ -132,29 +132,29 @@ openssl x509 -in /home/npm/npm/data/custom_ssl/npm-14/fullchain.pem -noout -subj
 Expected output:
 
 ```
-subject=O = cfolino, OU = homelab, CN = pbs.cfolino.com
+subject=O = cfolino, OU = homelab, CN = <internal-host>
 issuer=C = US, O = Homelab, CN = cfolino Root CA
 ```
 
 ### 11. Apply the Signed Certificate in NPM
-Edit the proxy host entry for `pbs.cfolino.com` and apply:
+Edit the proxy host entry for `<internal-host>` and apply:
 
 | Setting | Value |
 |----------|--------|
 | Scheme | HTTPS |
-| Forward Hostname/IP | pbs.internal.cfolino.com |
+| Forward Hostname/IP | <internal-host> |
 | Forward Port | 8007 |
 | Block Common Exploits | Yes |
 | WebSocket Support | Yes |
 | Force SSL | Yes |
 | HTTP/2 | Yes |
-| SSL Certificate | `pbs.cfolino.com (Custom)` |
+| SSL Certificate | `<internal-host> (Custom)` |
 
 Save changes and restart NPM if required.
 
 ### 12. Verify HTTPS Access
 ```
-curl -Ik https://pbs.cfolino.com
+curl -Ik https://internal.example
 ```
 
 Expected:
@@ -165,7 +165,7 @@ server: openresty
 content-type: text/html
 ```
 
-Browser test: open `https://pbs.cfolino.com` and verify the certificate chain shows **cfolino Root CA**.
+Browser test: open `https://internal.example` and verify the certificate chain shows **cfolino Root CA**.
 
 ---
 
@@ -181,7 +181,7 @@ Browser test: open `https://pbs.cfolino.com` and verify the certificate chain sh
 ## Prerequisites
 - The `ansible` user exists on both **CA** and **NPM** hosts.
 - Passwordless SSH access is configured.
-- The **CA server** (`ca.cfolino.com`) has the directory structure:
+- The **CA server** (`<internal-host>`) has the directory structure:
 
 ```
 /home/ca/ca/sign-cert.sh

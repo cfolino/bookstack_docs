@@ -2,9 +2,9 @@
 
 * Platform: BookStack
 
-* Hostname: bookstack.cfolino.com
+* Hostname: <internal-host>
 
-* Management URL: bookstack.cfolino.com:8080
+* Management URL: <internal-host>:8080
 
 * Management IP: 192.168.30.10
 

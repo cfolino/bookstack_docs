@@ -1,6 +1,6 @@
 - Role: Infrastructure Automation Platform
 - Platform: Ubuntu 24.04 Server
-- Hostname: ansible.cfolino.com
+- Hostname: <internal-host>
 - Management URL: SSH access via ssh ansible@192.168.10.11
 - Management IP: 192.168.10.11
 - Port: 3000

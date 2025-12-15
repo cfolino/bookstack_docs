@@ -1,7 +1,7 @@
 * Role: Reverse Proxy and Certificate Termination
 * Platform: Ubuntu 24.04 Server (Docker-based Nginx Proxy Manager)
-* Hostname: npm.cfolino.com
-* Management URL: https://npm.cfolino.com
+* Hostname: <internal-host>
+* Management URL: https://internal.example
 * Management IP: 192.168.10.100
 * VLAN: 1 (Infrastructure LAN)
 

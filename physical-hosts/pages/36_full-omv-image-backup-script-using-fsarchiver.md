@@ -32,7 +32,7 @@ Creates a **live full backup** of the OMV root partition using `fsarchiver`, wit
 set -euo pipefail
 
 # === Configuration ===
-BACKUP_BASE="/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/omv_backups"
+BACKUP_BASE="/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/omv_backups"
 FULL_BACKUP_DIR="$BACKUP_BASE/full_image_backups"
 LOGFILE="/var/log/omv_full_image_backup.log"
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")

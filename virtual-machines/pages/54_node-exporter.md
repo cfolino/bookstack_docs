@@ -11,7 +11,7 @@ Node Exporter exposes host-level system metrics (CPU, memory, disk, networking) 
 * Runs on port `9100` by default.
 * No config required—auto-discovers host metrics.
 * Installed as a system service and enabled at boot.
-* Metrics available at `http://grafanba.cfolino.com:9100/metrics`.
+* Metrics available at `https://internal.example/metrics`.
 
 ---
 

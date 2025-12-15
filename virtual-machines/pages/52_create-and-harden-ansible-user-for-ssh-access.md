@@ -31,7 +31,7 @@ SSH_DIR="/home/${ANSIBLE_USER}/.ssh"
 AUTHORIZED_KEYS="${SSH_DIR}/authorized_keys"
 
 # Public key from your Ansible control node
-PUB_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINCTCTvLEv+uBz6gCPsA2UOcmyYTavT1O556ZIMuz5jR ansible@cfolino.com"
+PUB_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINCTCTvLEv+uBz6gCPsA2UOcmyYTavT1O556ZIMuz5jR <redacted-email>"
 
 # Create ansible user if not already present
 if id "${ANSIBLE_USER}" &>/dev/null; then

@@ -35,7 +35,7 @@ Creates a compressed tarball backup of essential Proxmox VE OS directories (excl
 
 # Variables
 BACKUP_NAME="pve_backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
-BACKUP_DIR="/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/pve_backups"
+BACKUP_DIR="/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/pve_backups"
 LOG_FILE="/var/log/pve_backup.log"
 
 # Directories to exclude (excluding VM disk images, LXC containers, and QEMU files)

@@ -1,7 +1,7 @@
 * Role: Monitoring and Dashboard Platform
 * Platform: Ubuntu 24.04 Server
-* Hostname: grafana.cfolino.com
-* Management URL: Web UI at http://grafana.cfolino.com:3000
+* Hostname: <internal-host>
+* Management URL: Web UI at https://internal.example
 * Management IP: 192.168.10.13
 * VLAN: 1 (Infrastructure LAN)
 * Notes:
