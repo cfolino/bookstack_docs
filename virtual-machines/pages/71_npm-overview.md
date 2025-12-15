@@ -1,14 +1,14 @@
 * Role: Reverse Proxy and Certificate Termination
 * Platform: Ubuntu 24.04 Server (Docker-based Nginx Proxy Manager)
-* Hostname: npm.internal
-* Management URL: https://npm.internal
-* Management IP: 192.168.x.x
+* Hostname: npm.cfolino.com
+* Management URL: https://npm.cfolino.com
+* Management IP: 192.168.10.100
 * VLAN: 1 (Infrastructure LAN)
 
 Notes:
 * Static IP assigned via Netplan
-* DNS: 192.168.x.x, 192.168.x.x
-* Gateway: 192.168.x.x
+* DNS: 192.168.10.44, 192.168.10.46
+* Gateway: 192.168.10.1
 * Proxmox VMID: 105
 * Resources: 2 vCPU / 4 GB RAM / 32 GB disk
 

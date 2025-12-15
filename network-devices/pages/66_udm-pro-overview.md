@@ -2,9 +2,9 @@
 
 * Platform: Ubiquiti UniFi Dream Machine Pro
 
-* Hostname: udm.internal
+* Hostname: udm.cfolino.com
 
-* Management IP: 192.168.x.x
+* Management IP: 192.168.10.1
 
 * VLAN: 1
 

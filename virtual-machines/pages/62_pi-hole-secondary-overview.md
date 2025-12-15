@@ -2,11 +2,11 @@
 
 * Platform: Pi-hole
 
-* Hostname: pihole-backup.internal
+* Hostname: pihole-backup.cfolino.com
 
-* Management URL: pihole-backup.internal/admin
+* Management URL: pihole-backup.cfolino.com/admin
 
-* Management IP: 192.168.x.x
+* Management IP: 192.168.10.46
 
 * VLAN: 1
 

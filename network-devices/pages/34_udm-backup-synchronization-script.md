@@ -29,9 +29,9 @@ This script synchronizes UniFi Dream Machine (UDM) automatic backups from the UD
 #!/bin/bash
 
 # UDM details
-UDM_IP="192.168.x.x"              # UDM IP address
+UDM_IP="192.168.10.1"              # UDM IP address
 UDM_BACKUP_DIR="/data/unifi/data/backup/autobackup"  # UDM backup directory
-OMV_BACKUP_DIR="/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/udm_backups"  # OMV backup directory
+OMV_BACKUP_DIR="/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/udm_backups"  # OMV backup directory
 
 # Use rsync to pull the contents from UDM and skip already copied files
 rsync -avz --ignore-existing -e "ssh -i /home/udmsvc/.ssh/omv_to_udm_backup" root@$UDM_IP:$UDM_BACKUP_DIR/ "$OMV_BACKUP_DIR"

@@ -19,7 +19,7 @@ openssl req -new -newkey rsa:4096 -nodes \
 
 * Replace `<path-to-private-key>` with your desired private key output location.
 * Replace `<path-to-csr>` with your desired CSR output location.
-* Replace `<common-name>` with the FQDN or hostname (e.g., `<redacted-email>`).
+* Replace `<common-name>` with the FQDN or hostname (e.g., `server.example.com`).
 * Replace `<organization>` with your organization name (e.g., `MyCompany`).
 * Replace `<organizational-unit>` with the department or unit name (e.g., `IT`).
 
@@ -34,13 +34,13 @@ openssl req -new -newkey rsa:4096 -nodes \
 From the server that generated the CSR:
 
 ```bash
-scp <path-to-csr> ca@ca.internal:/home/ca/ca/pending-csrs/
+scp <path-to-csr> ca@ca.cfolino.com:/home/ca/ca/pending-csrs/
 ```
 
 Example:
 
 ```bash
-scp /etc/ssl/certs/server.csr ca@ca.internal:/home/ca/ca/pending-csrs/
+scp /etc/ssl/certs/server.csr ca@ca.cfolino.com:/home/ca/ca/pending-csrs/
 ```
 
 ---
@@ -50,7 +50,7 @@ scp /etc/ssl/certs/server.csr ca@ca.internal:/home/ca/ca/pending-csrs/
 SSH into the CA VM:
 
 ```bash
-ssh ca@ca.internal
+ssh ca@ca.cfolino.com
 ```
 
 Run the signing script:
@@ -62,7 +62,7 @@ Run the signing script:
 Example:
 
 ```bash
-/home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt server.internal 192.168.x.x
+/home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt server.cfolino.com 192.168.10.128
 ```
 
 ---
@@ -164,4 +164,4 @@ ls /home/ca/ca/newcerts/
 * If the script fails silently, run it with `bash -x` for debugging:
 
 ```bash
-bash -x /home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt server.internal ip address
+bash -x /home/ca/ca/sign-cert.sh /home/ca/ca/pending-csrs/server.csr /home/ca/ca/signed-certs/server.crt server.cfolino.com ip address

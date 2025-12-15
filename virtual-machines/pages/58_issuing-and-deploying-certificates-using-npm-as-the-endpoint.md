@@ -15,7 +15,7 @@ Edit `/home/ansible/ansible/inventory/inventory.yml` and ensure the host exists 
 all:
   hosts:
     pbs:
-      ansible_host: pbs.internal.internal
+      ansible_host: pbs.internal.cfolino.com
       ansible_user: ansible
       ansible_ssh_private_key_file: /home/ansible/.ssh/id_ansible
 ```
@@ -30,14 +30,14 @@ In the **Pi-hole GUI** (`Local DNS → DNS Records`):
 
 | Domain | IP | Purpose |
 |---------|----|----------|
-| `pbs.internal` | `192.168.x.x` | Points to NPM proxy host |
-| `pbs.internal.internal` | `192.168.15.x` | Points directly to PBS VM |
+| `pbs.cfolino.com` | `192.168.10.100` | Points to NPM proxy host |
+| `pbs.internal.cfolino.com` | `192.168.15.x` | Points directly to PBS VM |
 
 Verify DNS resolution:
 
 ```bash
-dig +short pbs.internal
-dig +short pbs.internal.internal
+dig +short pbs.cfolino.com
+dig +short pbs.internal.cfolino.com
 ```
 ### 4. Verify SSH Connectivity (Semaphore)
 Run the `ping.yml` playbook in Semaphore to confirm passwordless access.
@@ -51,11 +51,11 @@ pbs : ok=1 changed=0 unreachable=0 failed=0
 ```
 
 ### 5. Add Proxy Host and Dummy Certificate in NPM
-1. Log in to **https://npm.internal**
+1. Log in to **https://npm.cfolino.com**
 2. Go to **Hosts → Proxy Hosts → Add Proxy Host**
 3. Configure:
-   - Domain: `pbs.internal`
-   - Forward Hostname/IP: `pbs.internal.internal`
+   - Domain: `pbs.cfolino.com`
+   - Forward Hostname/IP: `pbs.internal.cfolino.com`
    - Forward Port: `8007`
    - Block Common Exploits: Yes
    - WebSocket Support: Yes
@@ -85,26 +85,26 @@ Edit `/home/ansible/ansible/inventory/host_vars/npm.yml`:
 
 ```
 npm_cert_map:
-  grafana.internal: 3
-  npm.internal: 7
-  pve.internal: 4
-  bookstack.internal: 6
-  prometheus.internal: 8
-  node-exporter.internal: 9
-  pihole.internal: 10
-  semaphore.internal: 11
-  omv.internal: 13
-  pbs.internal: 14
+  grafana.cfolino.com: 3
+  npm.cfolino.com: 7
+  pve.cfolino.com: 4
+  bookstack.cfolino.com: 6
+  prometheus.cfolino.com: 8
+  node-exporter.cfolino.com: 9
+  pihole.cfolino.com: 10
+  semaphore.cfolino.com: 11
+  omv.cfolino.com: 13
+  pbs.cfolino.com: 14
 ```
 
 ### 8. Open Firewall Between NPM and Target Host
-Allow NPM (192.168.x.x) to reach PBS (192.168.15.x) over the service port.
+Allow NPM (192.168.10.100) to reach PBS (192.168.15.x) over the service port.
 
 | Field | Value |
 |--------|-------|
 | Action | Accept |
 | Description | Allow NPM to reach PBS |
-| Source | 192.168.x.x |
+| Source | 192.168.10.100 |
 | Destination | 192.168.15.x |
 | Protocol | TCP |
 | Port | 8007 |
@@ -112,7 +112,7 @@ Allow NPM (192.168.x.x) to reach PBS (192.168.15.x) over the service port.
 Confirm connectivity:
 
 ```bash
-curl -Ik https://pbs.internal.internal:8007
+curl -Ik https://pbs.internal.cfolino.com:8007
 ```
 
 ### 9. Run Certificate Playbook
@@ -132,29 +132,29 @@ openssl x509 -in /home/npm/npm/data/custom_ssl/npm-14/fullchain.pem -noout -subj
 Expected output:
 
 ```
-subject=O = cfolino, OU = homelab, CN = pbs.internal
+subject=O = cfolino, OU = homelab, CN = pbs.cfolino.com
 issuer=C = US, O = Homelab, CN = cfolino Root CA
 ```
 
 ### 11. Apply the Signed Certificate in NPM
-Edit the proxy host entry for `pbs.internal` and apply:
+Edit the proxy host entry for `pbs.cfolino.com` and apply:
 
 | Setting | Value |
 |----------|--------|
 | Scheme | HTTPS |
-| Forward Hostname/IP | pbs.internal.internal |
+| Forward Hostname/IP | pbs.internal.cfolino.com |
 | Forward Port | 8007 |
 | Block Common Exploits | Yes |
 | WebSocket Support | Yes |
 | Force SSL | Yes |
 | HTTP/2 | Yes |
-| SSL Certificate | `pbs.internal (Custom)` |
+| SSL Certificate | `pbs.cfolino.com (Custom)` |
 
 Save changes and restart NPM if required.
 
 ### 12. Verify HTTPS Access
 ```
-curl -Ik https://pbs.internal
+curl -Ik https://pbs.cfolino.com
 ```
 
 Expected:
@@ -165,7 +165,7 @@ server: openresty
 content-type: text/html
 ```
 
-Browser test: open `https://pbs.internal` and verify the certificate chain shows **cfolino Root CA**.
+Browser test: open `https://pbs.cfolino.com` and verify the certificate chain shows **cfolino Root CA**.
 
 ---
 
@@ -181,7 +181,7 @@ Browser test: open `https://pbs.internal` and verify the certificate chain shows
 ## Prerequisites
 - The `ansible` user exists on both **CA** and **NPM** hosts.
 - Passwordless SSH access is configured.
-- The **CA server** (`ca.internal`) has the directory structure:
+- The **CA server** (`ca.cfolino.com`) has the directory structure:
 
 ```
 /home/ca/ca/sign-cert.sh

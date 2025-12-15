@@ -24,7 +24,7 @@ Creates a compressed tarball backup of essential Proxmox VE OS directories (excl
 | `EXCLUDES`      | Directories excluded from backup tarball                                   |
 | SSH private key | Hardcoded to `/root/.ssh/pve_to_omv_backup_ed25519` for secure connections |
 | OMV SSH user    | `pvesvc` configured user on OMV server                                     |
-| OMV IP address  | `192.168.x.x` (example)                                                 |
+| OMV IP address  | `192.168.15.225` (example)                                                 |
 
 ---
 
@@ -35,7 +35,7 @@ Creates a compressed tarball backup of essential Proxmox VE OS directories (excl
 
 # Variables
 BACKUP_NAME="pve_backup_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
-BACKUP_DIR="/srv/dev-disk-by-uuid-<uuid-redacted>/backup_cifs/pve_backups"
+BACKUP_DIR="/srv/dev-disk-by-uuid-ab75fcb7-21d3-4d7c-9f2d-257cf8fa074f/backup_cifs/pve_backups"
 LOG_FILE="/var/log/pve_backup.log"
 
 # Directories to exclude (excluding VM disk images, LXC containers, and QEMU files)
@@ -61,7 +61,7 @@ fi
 
 # Transfer the backup file to OMV using rsync
 echo "Transferring backup to OMV..." | tee -a "$LOG_FILE"
-rsync -avz -e "ssh -i /root/.ssh/pve_to_omv_backup_ed25519" "/tmp/$BACKUP_NAME" pvesvc@192.168.x.x:"$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
+rsync -avz -e "ssh -i /root/.ssh/pve_to_omv_backup_ed25519" "/tmp/$BACKUP_NAME" pvesvc@192.168.15.225:"$BACKUP_DIR" 2>&1 | tee -a "$LOG_FILE"
 
 # Check if the rsync command was successful
 if [ $? -eq 0 ]; then
@@ -85,16 +85,16 @@ fi
 
 # Ensure that there are only 3 backups on OMV
 echo "Checking and removing old backups on OMV..." | tee -a "$LOG_FILE"
-BACKUPS_ON_OMV=$(ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.x.x "ls -1 $BACKUP_DIR | wc -l")
+BACKUPS_ON_OMV=$(ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.15.225 "ls -1 $BACKUP_DIR | wc -l")
 
 if [ "$BACKUPS_ON_OMV" -gt 3 ]; then
     # Remove the oldest backup if there are more than 3 backups
-    OLD_BACKUPS=$(ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.x.x \
+    OLD_BACKUPS=$(ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.15.225 \
     "ls -t $BACKUP_DIR | tail -n +4")
 
     echo "Removing old backups on OMV..." | tee -a "$LOG_FILE"
     for BACKUP in $OLD_BACKUPS; do
-        ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.x.x \
+        ssh -i /root/.ssh/pve_to_omv_backup_ed25519 pvesvc@192.168.15.225 \
             "rm -f $BACKUP_DIR/$BACKUP" 2>&1 | tee -a "$LOG_FILE"
     done
 else

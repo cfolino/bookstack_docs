@@ -2,9 +2,9 @@
 
 * Hypervisor Platform: Proxmox VE
 
-* Hostname: proxmox.internal
+* Hostname: proxmox.cfolino.com
 
-* Management IP: 192.168.x.x
+* Management IP: 192.168.10.128
 
 * VLAN: 1
 
