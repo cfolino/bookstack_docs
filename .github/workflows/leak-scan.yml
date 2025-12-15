@@ -26,23 +26,22 @@ jobs:
           fi
 
           echo "Scanning for internal email addresses..."
-          if grep -R -n -E "[A-Za-z0-9._%+-]+@cfolino\.com" . \
-            | grep -v "<redacted-email>"; then
+          if grep -R -n -E "[A-Za-z0-9._%+-]+@cfolino\.com" .; then
             echo "ERROR: internal email detected"
             exit 1
           fi
 
-          echo "Scanning for RFC1918 IPs..."
+          echo "Scanning for raw RFC1918 IPs (numeric only)..."
           if grep -R -n -E "192\.168\.[0-9]{1,3}\.[0-9]{1,3}" .; then
-            echo "ERROR: internal IP detected"
+            echo "ERROR: raw 192.168.x.x IP detected"
             exit 1
           fi
           if grep -R -n -E "10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}" .; then
-            echo "ERROR: internal IP detected"
+            echo "ERROR: raw 10.x.x.x IP detected"
             exit 1
           fi
           if grep -R -n -E "172\.(1[6-9]|2[0-9]|3[0-1])\.[0-9]{1,3}\.[0-9]{1,3}" .; then
-            echo "ERROR: internal IP detected"
+            echo "ERROR: raw 172.16-31.x.x IP detected"
             exit 1
           fi
 
