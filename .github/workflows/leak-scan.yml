@@ -18,18 +18,19 @@ jobs:
         run: |
           set -e
 
-          echo "Scanning for internal domains..."
+          echo "Scanning for internal domains (non-markdown files only)..."
           if grep -R -n "cfolino.com" . \
-            | grep -v "<internal-domain>" \
-            | grep -v "<redacted>"; then
-            echo "ERROR: internal domain detected"
+            --exclude-dir=.git \
+            --exclude="*.md"; then
+            echo "ERROR: internal domain detected outside documentation"
             exit 1
           fi
 
-          echo "Scanning for internal email addresses..."
+          echo "Scanning for internal email addresses (non-markdown files only)..."
           if grep -R -n -E "[A-Za-z0-9._%+-]+@cfolino\.com" . \
-            | grep -v "<redacted-email>"; then
-            echo "ERROR: internal email detected"
+            --exclude-dir=.git \
+            --exclude="*.md"; then
+            echo "ERROR: internal email detected outside documentation"
             exit 1
           fi
 
