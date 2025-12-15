@@ -129,7 +129,6 @@ It explains that the repository is a public mirror and persists across exports.
 ## Normal Usage Workflow
 
 ./bookstack-export.sh
-./sanitize-export.sh ~/bookstack_export_sanitized
 ./publish-bookstack-export.sh
 
 ---
