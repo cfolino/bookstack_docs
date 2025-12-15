@@ -206,3 +206,5 @@ systemctl enable zfs-vm-autostart.service
 * Safe: Avoids race conditions with disk not mounted when VMs boot.
 
 ---
+
+> **Test Marker:** SSH publish pipeline validation.
