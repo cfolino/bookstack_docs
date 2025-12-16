@@ -1,8 +1,12 @@
 ---
 
-This page documents the **patching and reboot workflow for the Ansible control node itself**. The control node is treated as **automation infrastructure**, and its maintenance is handled differently from all other systems.
+## Purpose
 
-Because this node orchestrates every other workflow, it is **always patched last** and never while automation jobs are actively running.
+This page documents the **patching and reboot workflow for the Ansible control node**.
+
+The Ansible control node is treated as **automation control-plane infrastructure**, not a general-purpose system. Because it orchestrates patching, reboots, backups, and configuration changes across the environment, it is patched **last**, **in isolation**, and with **maximum observability**.
+
+Loss or instability of this node would interrupt all automation, so this workflow prioritizes **safety, state capture, and controlled reboot behavior**.
 
 ---
 
@@ -11,64 +15,232 @@ Because this node orchestrates every other workflow, it is **always patched last
 This workflow applies **only** to:
 
 - The Ansible control node
-- The system hosting playbooks, inventory, and SSH keys
-- The system executing Semaphore jobs (if applicable)
+- The system hosting:
+  - Playbooks
+  - Inventory
+  - SSH keys
+  - Semaphore (job orchestration)
+- The VM identified as `ansible` in inventory
 
 This workflow **does not apply** to:
-- Application VMs
-- Proxmox VE
+
+- Application virtual machines
+- Proxmox VE hosts
 - Proxmox Backup Server
 - OpenMediaVault
+- Bulk or orchestrated patching workflows
+
+---
+
+## Inventory Context
+
+The Ansible control node is a **first-class inventory host**, not `localhost`.
+
+It belongs to the `infrastructure` group:
+
+```text
+@infrastructure:
+  ├── pve
+  ├── pbs
+  ├── ansible
+  └── omv
+```
+
+Isolation is achieved through **explicit playbook targeting**, not inventory separation.
 
 ---
 
 ## Design Constraints
 
-Patching the control node follows strict rules:
+This workflow follows strict rules:
 
-- Never patched concurrently with any other system
-- Never patched while Semaphore jobs are active
+- Never executed concurrently with other patching jobs
+- Never executed while Semaphore jobs are running
 - Always executed manually
-- Reboot must be explicitly observed
+- Always patched last
+- Reboot must be explicit and observable
 
-Loss of the control node mid-run would interrupt all automation, so this workflow prioritizes **control and observability** over convenience.
+Automation infrastructure is required to be **more stable than the systems it manages**.
 
 ---
 
-## Playbook Location
+## Entry Playbook
 
 ```text
-playbooks/patch_ansible.yml
+playbooks/patch_ansible_node.yml
 ```
-
-This playbook is intentionally minimal and relies on the shared patching role.
 
 ---
 
-## Playbook Content
+## Playbook Definition
 
 ```yaml
-# playbooks/patch_ansible.yml
-
 - name: Patch and reboot Ansible control node
   hosts: ansible
   gather_facts: yes
   become: yes
 
+  vars:
+    ansible_node_git_pull: true
+
   roles:
-    - patch_reboot
+    - ansible_node_patch
 ```
 
-No preparatory roles are included because:
-- The control node is not a VM dependency
-- No guest agent is required
-- Patch logic must remain minimal
+Notes:
+
+- A **dedicated role** is used
+- No shared patching roles are included
+- The `ansible_node_git_pull` variable is currently unused and has no effect
+
+---
+
+## Role Structure
+
+```text
+roles/ansible_node_patch/
+└── tasks/
+    └── main.yml
+```
+
+This role fully encapsulates all logic for control-plane patching, backup, shutdown, notification, and reboot.
+
+---
+
+## Execution Flow (Authoritative)
+
+### 1. Baseline System State Capture
+
+The following information is collected **before any changes**:
+
+- OS details (`lsb_release`)
+- Kernel version (before)
+- Uptime (before)
+- Root filesystem usage (before)
+- Semaphore service status (before)
+- Git repository status of `/home/ansible/ansible`
+
+These tasks are **read-only** and always executed.
+
+---
+
+### 2. Package Preparation
+
+- Apt cache is updated (with `cache_valid_time`)
+- List of upgradable packages is captured (before upgrade)
+
+---
+
+### 3. Control-Plane Backup
+
+A local backup archive is created containing:
+
+- `/home/ansible/.ssh`
+- Semaphore systemd unit files
+- Semaphore overrides
+- Local configuration JSON
+
+The archive is stored under:
+
+```text
+/home/ansible/backups/
+```
+
+Permissions are corrected to restrict access to the `ansible` user.
+
+This backup is performed **every run**.
+
+---
+
+### 4. OS Upgrade
+
+- Full `dist-upgrade` is applied
+- Autoremove and autoclean are executed
+- List of upgradable packages is captured again (after)
+
+---
+
+### 5. State Comparison
+
+After upgrades:
+
+- Kernel version is captured again
+- Kernel change is detected and recorded
+- Root filesystem usage is captured again
+
+Important:
+
+- Kernel change is **detected**
+- Kernel change **does not gate reboot behavior**
+
+---
+
+### 6. Automation Shutdown
+
+Semaphore is stopped **explicitly**:
+
+```yaml
+systemd:
+  name: semaphore.service
+  state: stopped
+```
+
+- Service status is captured after stop
+- Semaphore is **not restarted** in this workflow
+- Automation resumes only after the VM returns from reboot
+
+---
+
+### 7. Notification
+
+A detailed **HTML patching summary email** is constructed and sent via the shared `notify_email` role.
+
+The notification includes:
+
+- OS details
+- Kernel before/after
+- Disk usage before/after
+- Git repository status
+- Semaphore service status
+- Apt upgrade results
+- Backup archive path
+- Reboot note
+
+The notification logic itself is centralized and not reimplemented here.
+
+---
+
+### 8. Reboot (Critical)
+
+The control node is rebooted **from the hypervisor**, not from the guest OS.
+
+```yaml
+delegate_to: pve
+command: "qm reboot {{ vmid }}"
+```
+
+Key characteristics:
+
+- Reboot is **unconditional**
+- Executed on the Proxmox host (`pve`)
+- Requires `vmid` defined in:
+
+```text
+inventory/host_vars/ansible.yml
+```
+
+- Does **not** use:
+  - `ansible.builtin.reboot`
+  - Handler-based reboots
+  - Shared reboot orchestration roles
+
+Proxmox availability is a **hard dependency**.
 
 ---
 
 ## Pre-Flight Validation
 
-Before executing the playbook, the following checks are performed manually on the control node:
+Before execution, the following checks are performed manually on the control node:
 
 ```bash
 uptime -p
@@ -76,52 +248,33 @@ who -b
 df -h /
 ```
 
-Additional operational checks:
+Operational confirmation:
 
-- Confirm no Semaphore jobs are running
-- Confirm no playbooks are executing
-- Confirm SSH access from a secondary system if available
+- No Semaphore jobs running
+- No active Ansible playbooks
+- Proxmox host reachable
 
-These checks ensure the node can be safely rebooted.
+If any condition is not met, patching is deferred.
 
 ---
 
 ## Execution Command
 
-From the control node itself:
-
 ```bash
-ansible-playbook playbooks/patch_ansible.yml
+ansible-playbook playbooks/patch_ansible_node.yml
 ```
 
-Dry run (syntax and role resolution only):
+Dry run (syntax and resolution only):
 
 ```bash
-ansible-playbook playbooks/patch_ansible.yml --check
+ansible-playbook playbooks/patch_ansible_node.yml --check
 ```
-
-The dry run confirms that:
-- Inventory resolution is correct
-- Role dependencies are intact
-- No unexpected changes are introduced
-
----
-
-## Reboot Behavior
-
-Reboot behavior is governed by the shared `patch_reboot` role:
-
-- Reboot occurs only if required by the OS
-- Only a single reboot is performed
-- Ansible waits for SSH to return
-
-Because the playbook runs locally, SSH reconnect behavior is carefully observed.
 
 ---
 
 ## Post-Patch Verification
 
-After the system returns:
+After the VM returns:
 
 ```bash
 uptime -p
@@ -129,10 +282,13 @@ who -b
 ansible --version
 ```
 
-Expected results:
-- Uptime reflects recent reboot (if required)
-- Boot time aligns with maintenance window
-- Ansible binaries and Python environment are intact
+Expected:
+
+- Recent uptime
+- Control node reachable
+- Ansible runtime intact
+
+Semaphore jobs are resumed manually after verification.
 
 ---
 
@@ -142,18 +298,18 @@ Expected results:
 
 | Symptom | Likely Cause |
 |------|------|
-| SSH unavailable | Reboot still in progress |
-| Ansible fails to start | Python or dependency issue |
-| Semaphore unreachable | Service startup delay |
+| SSH unavailable | VM still rebooting |
+| Semaphore unreachable | Service not yet restarted |
+| Reboot fails | Proxmox connectivity issue |
 
 ---
 
 ### Recovery Strategy
 
-- Access system console if SSH does not return
-- Validate disk and filesystem state
-- Restart automation services manually if needed
-- Re-run the playbook only after validation
+- Access VM console via Proxmox
+- Verify disk and filesystem health
+- Restart Semaphore manually if required
+- Re-run playbook only after system stability is confirmed
 
 Because this is the control plane, recovery is always **manual and deliberate**.
 
@@ -163,28 +319,33 @@ Because this is the control plane, recovery is always **manual and deliberate**.
 
 This workflow guarantees:
 
-- The control node is patched in isolation
-- No automation jobs are interrupted mid-run
-- Reboot logic remains centralized
-- Failure is immediately visible
+- Control-plane isolation
+- Explicit backup before upgrade
+- Automation shutdown prior to reboot
+- Hypervisor-controlled reboot
+- Immediate visibility through notification
 
 ---
 
-## What This Workflow Does Not Do
+## Explicit Non-Goals
 
-- Patch any other system
-- Manage Semaphore jobs
-- Restart unrelated services
-- Perform environment upgrades
+This workflow does **not**:
 
-Those concerns are handled independently.
+- Patch other hosts
+- Restart Semaphore automatically
+- Perform repository updates
+- Use shared patching or reboot roles
+
+Those concerns are handled elsewhere.
 
 ---
 
 ## Summary
 
-The Ansible control node is patched conservatively and intentionally. This workflow reflects the principle that **automation infrastructure must be more stable than the systems it manages**.
+The Ansible control node is patched conservatively and intentionally.
 
-If the control node cannot safely complete these steps, patching is postponed until conditions are acceptable.
+This workflow reflects the principle that **automation infrastructure must be more stable than the systems it manages**, and that reboot authority belongs to the hypervisor, not the guest.
+
+If the control node cannot safely meet these conditions, patching is postponed.
 
 ---
