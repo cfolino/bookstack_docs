@@ -85,8 +85,16 @@ Verify:
 dig +short <internal-host>
 dig +short <internal-host>
 ```
+### Upload Dummy Certificates
+- In order to map a VM to NPM and aquire a numeric ID a certificate must be uploaded first
+- \\\192.168.X.X\ssh contains two files:
+  - dummycert.pem
+  - dummykey
+- Upload both through the NPM web interface to map its ID
+- New certificates will overwrite over them
+  - This is used to map ID and only that
 
----
+- ---
 
 ## NPM Certificate Mapping
 
