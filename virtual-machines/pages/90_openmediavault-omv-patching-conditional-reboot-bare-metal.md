@@ -1,5 +1,3 @@
----
-
 ## Purpose
 
 This page documents the **patching and reboot workflow for OpenMediaVault (OMV)**.
