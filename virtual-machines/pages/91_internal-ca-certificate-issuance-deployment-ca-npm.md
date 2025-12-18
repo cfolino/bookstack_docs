@@ -1,5 +1,3 @@
----
-
 ## Purpose
 
 This page documents the **end-to-end certificate lifecycle** used to:
@@ -9,7 +7,7 @@ This page documents the **end-to-end certificate lifecycle** used to:
 - Deploy the resulting certificate to **Nginx Proxy Manager (NPM)**
 - Reload NPM so the new certificate becomes active
 
-This workflow is designed to be **secure, deterministic, and auditable**, with explicit control over where cryptographic material is generated, signed, transported, and stored.
+This workflow is designed to be **secure, deterministic, and auditable**, with explicit control over where cryptographic material is generated, stored, and deployed.
 
 ---
 
@@ -20,17 +18,15 @@ This workflow is designed to be **secure, deterministic, and auditable**, with e
 - Internally trusted TLS certificates
 - Services fronted by **Nginx Proxy Manager**
 - Certificates issued by the internal CA (`<internal-host>`)
-- Manual, operator-initiated certificate issuance
 
 ### Explicit exclusions
 
 This workflow does **not**:
 
-- Use Let’s Encrypt or any public CA
-- Automatically rotate certificates
-- Issue wildcard certificates
-- Deploy certificates directly to application hosts
-- Perform unattended issuance
+- Use ACME or public certificate authorities
+- Perform wildcard certificate issuance
+- Automatically rotate certificates on a schedule
+- Manage trust distribution to client devices
 
 ---
 
@@ -42,225 +38,133 @@ playbooks/issue_and_deploy_cert.yml
 
 ---
 
-## High-Level Architecture
+## High-Level Workflow
 
-```text
-Ansible Controller
-        |
-        | (SSH / Ansible)
-        v
-Internal CA  ──► signs certificate
-        |
-        | (fetch)
-        v
-Ansible Controller (temporary staging)
-        |
-        | (copy)
-        v
-Nginx Proxy Manager (custom_ssl directory)
-```
+1. Validate inventory mappings and connectivity
+2. Generate a private key and CSR on the CA host
+3. Sign the CSR using the internal CA
+4. Fetch the signed certificate to the Ansible controller
+5. Assemble a full certificate chain
+6. Deploy the certificate and key to the NPM host
+7. Restart the NPM container to activate the certificate
+8. Clean up temporary artifacts
 
 ---
 
-## Inventory & Variable Model
+## Inventory and Mapping Requirements
 
-### Certificate Mapping (NPM)
+### NPM Certificate Mapping
 
-Each FQDN must be mapped to an NPM certificate ID:
+Each proxied service must have a **static certificate ID mapping** defined on the NPM host:
 
 ```yaml
-# inventory/host_vars/npm.yml
-npm_data_root: /home/npm/npm/data/custom_ssl
-
 npm_cert_map:
-  <internal-host>: 1
-  <internal-host>: 2
+  <internal-host>: 3
+  <internal-host>: 7
+  <internal-host>: 4
+  <internal-host>: 6
+  <internal-host>: 14
 ```
 
-This mapping determines **where the certificate is deployed** inside NPM.
+This ID must match the directory:
+
+```text
+/home/npm/npm/data/custom_ssl/npm-<ID>
+```
 
 ---
 
-### CA Variables (Defined on NPM host vars)
-
-The CA paths and signing script are referenced explicitly:
+## Playbook Definition (Authoritative)
 
 ```yaml
-ca_csr_dir: /home/ca/ca/pending-csrs
-ca_signed_dir: /home/ca/ca/signed-certs
-ca_sign_script: /home/ca/ca/sign-cert.sh
+- name: Generate, sign, and deploy certificate from CA to NPM
+  hosts: npm
+  gather_facts: false
+
+  vars_prompt:
+    - name: cert_name
+      prompt: "Enter the FQDN (e.g. <internal-host>)"
+      private: no
+    - name: cert_ip
+      prompt: "Enter the host IP (e.g. 192.168.x.x)"
+      private: no
 ```
 
-The CA archive root is normalized in the playbook:
+The playbook intentionally operates **one certificate at a time** to reduce blast radius and ensure traceability.
+
+---
+
+## Certificate Generation (CA Host)
+
+- Private keys and CSRs are generated **only on the CA host**
+- Keys are never generated on the NPM host
+- CSR creation is idempotent
+
+Key locations:
 
 ```text
-/home/ca/ca/archive
+/home/ca/ca/keys/
+/home/ca/ca/pending-csrs/
+/home/ca/ca/signed-certs/
+/home/ca/ca/archive/
 ```
 
 ---
 
-## Operator Input (Interactive)
+## Signing Process
 
-This playbook is intentionally interactive.
-
-At runtime, the operator is prompted for:
-
-- **Certificate FQDN**
-  ```text
-  <internal-host>
-  ```
-- **Service IP address** (used for SAN)
-  ```text
-  192.168.x.x
-  ```
-
-These values are used to build the CSR and SAN entries.
-
----
-
-## Execution Flow (Authoritative)
-
-### 1. Preflight Validation
-
-Before any cryptographic operations occur:
-
-- Validate that `npm_cert_map` exists
-- Validate that the requested FQDN has an NPM mapping
-- Confirm reachability of:
-  - NPM host
-  - CA host
-
-Failures here abort execution immediately.
-
----
-
-### 2. Controller Staging Directory
-
-A temporary directory is created on the Ansible controller:
-
-```text
-/tmp/ansible-cert-<fqdn>
-```
-
-Properties:
-- Mode `0700`
-- Used only for transient transport
-- Automatically removed at the end of the run
-
----
-
-### 3. CA Directory Preparation
-
-On the CA host:
-
-- Required directories are ensured to exist
-- Directories are group-writable to allow signing without sudo
-
-Directories include:
-- Private keys
-- CSRs
-- Signed certificates
-- Archive storage
-
----
-
-### 4. Private Key & CSR Generation (on CA)
-
-**Key point:**
-Private keys are generated **on the CA host**, not on the controller or NPM.
-
-Command behavior:
-- RSA 4096-bit key
-- No passphrase (`-nodes`)
-- Idempotent (skipped if CSR already exists)
-
-Artifacts created:
-- `{{ cert_name }}.key`
-- `{{ cert_name }}.csr`
-
----
-
-### 5. Certificate Signing (on CA)
-
-The CSR is signed using the CA’s signing script:
-
-```text
-sign-cert.sh <csr> <crt> <fqdn> <ip>
-```
-
-Features:
-- SAN includes DNS + IP
-- Certificate is archived automatically
-- Signing is performed **without sudo**
-- Stdout and stderr are captured and logged
-
----
-
-### 6. Artifact Retrieval (Controller)
-
-The controller fetches:
-
-- The signed certificate (`.crt`)
-- The private key (`.key`) if present
-
-These files exist **only temporarily** on the controller.
-
----
-
-### 7. Fullchain Construction (Controller)
-
-The controller builds:
-
-```text
-<fqdn>.fullchain.pem
-```
-
-Contents:
-- Leaf certificate
-- Optional CA chain (if configured)
-
-This file is what NPM consumes.
-
----
-
-### 8. Deployment to NPM
-
-On the NPM host:
-
-- Certificate directory is ensured:
-  ```text
-  {{ npm_data_root }}/npm-<cert_id>
-  ```
-- Files deployed:
-  - `fullchain.pem` (0644)
-  - `privkey.pem` (0600, only if staged)
-
-No certificate logic exists inside NPM itself — it simply reads files.
-
----
-
-### 9. NPM Reload
-
-The NPM Docker container is restarted:
-
-```yaml
-community.docker.docker_container:
-  restart: true
-```
-
-This forces NPM to reload the new certificate.
-
----
-
-### 10. Confirmation & Cleanup
-
-- A confirmation message is printed with:
+- Signing is performed using `sign-cert.sh`
+- SANs include:
   - FQDN
-  - Certificate ID
-  - Deployment path
-- Temporary controller files are removed
+  - Explicit IP address
+- All issued certificates are archived for audit purposes
 
-No private key material remains outside CA + NPM.
+The CA signing step does **not** require sudo.
+
+---
+
+## Deployment to NPM
+
+Deployment actions:
+
+- Fullchain assembled on the controller
+- Files copied into the mapped NPM cert directory
+- Permissions applied correctly
+- NPM container restarted to load the new certificate
+
+```text
+fullchain.pem
+privkey.pem
+```
+
+---
+
+## Validation
+
+### On the NPM Host
+
+```bash
+openssl x509 \
+  -in /home/npm/npm/data/custom_ssl/npm-<ID>/fullchain.pem \
+  -noout -subject -issuer -dates
+```
+
+Expected issuer:
+
+```text
+CN = cfolino Root CA
+```
+
+---
+
+## Failure Modes and Recovery
+
+| Issue | Likely Cause | Resolution |
+|------|-------------|------------|
+| Certificate not applied | Incorrect cert ID mapping | Verify `npm_cert_map` |
+| Redirect loop | HTTP/HTTPS mismatch | Force HTTPS in NPM |
+| Permission denied | Incorrect ownership | Fix file permissions |
+| Container restart fails | Missing docker group | Add user to docker group |
 
 ---
 
@@ -268,68 +172,15 @@ No private key material remains outside CA + NPM.
 
 This workflow guarantees:
 
-- Private keys are never generated on NPM
-- CA signing is centralized and auditable
-- Controller staging is ephemeral
-- Permissions are explicitly set
-- Certificates are mapped deterministically to NPM IDs
-- No implicit trust or wildcard behavior
-
----
-
-## Execution Command
-
-```bash
-ansible-playbook playbooks/issue_and_deploy_cert.yml
-```
-
-Dry-run mode is intentionally **not supported**, because certificate issuance is a stateful operation.
-
----
-
-## Post-Deployment Verification
-
-From a client machine:
-
-```bash
-openssl s_client -connect <fqdn>:443 -servername <fqdn>
-```
-
-Confirm:
-- Correct certificate CN
-- Correct SAN entries
-- Internal CA trust chain
-
----
-
-## Failure Modes & Recovery
-
-| Scenario | Recovery |
-|--------|----------|
-| Missing npm_cert_map entry | Add mapping, re-run |
-| CA unreachable | Fix connectivity, re-run |
-| NPM container fails to restart | Restart manually, inspect logs |
-| Wrong cert deployed | Fix mapping, re-issue |
-
-Because certificates are archived on the CA, rollback is always possible.
-
----
-
-## Explicit Non-Goals
-
-This workflow does **not**:
-
-- Automate renewals
-- Replace application-level TLS
-- Expose private keys to end users
-- Integrate with ACME or public CAs
+- Private keys never leave the CA host unencrypted
+- Explicit inventory-controlled deployment
+- Deterministic, repeatable certificate issuance
+- Full audit trail of signed certificates
 
 ---
 
 ## Summary
 
-This certificate automation pipeline provides **secure, repeatable internal TLS** using a dedicated CA and deterministic deployment into Nginx Proxy Manager.
+Internal certificate issuance is treated as **infrastructure**, not convenience automation.
 
-All cryptographic operations are explicit, auditable, and controlled, making this workflow suitable for long-term homelab operations and professional demonstration.
-
----
+Each certificate is generated, signed, deployed, and activated through a controlled, auditable process that integrates tightly with Ansible, the internal CA, and Nginx Proxy Manager.

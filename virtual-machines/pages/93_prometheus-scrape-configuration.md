@@ -1,15 +1,20 @@
----
-This page documents how Prometheus is configured to scrape metrics from all monitoring exporters deployed in the homelab. It serves as the authoritative reference for what Prometheus scrapes, why it scrapes it, and how targets are verified.
+## Purpose
 
-The configuration aligns exactly with the Ansible-deployed exporters:
+This page documents how **Prometheus** is configured to scrape metrics from all monitoring exporters deployed in the homelab.
+
+The configuration aligns exactly with the **Ansible-deployed exporters**:
+
 - **Node Exporter** on all infrastructure and Ubuntu VMs
 - **Blackbox Exporter** on the Grafana VM
+
+Prometheus acts as the **single source of truth** for metrics collection. Grafana consumes data exclusively from Prometheus.
 
 ---
 
 ## Prometheus Role in the Stack
 
 Prometheus is responsible for:
+
 - Scraping metrics endpoints
 - Storing time-series data
 - Serving metrics to Grafana dashboards
@@ -19,101 +24,92 @@ Grafana does **not** scrape hosts directly — all metrics flow through Promethe
 
 ---
 
-## Exporters & Endpoints
+## Exporters and Endpoints
 
 ### Node Exporter
-- Installed on:
+
+- Deployed via Ansible to:
   - Infrastructure hosts
   - Ubuntu VMs
-- Metrics endpoint:
-  - `http://<host>:9100/metrics`
-- Purpose:
-  - CPU, memory, disk, filesystem, load, uptime, network stats
+- Default endpoint:
+  ```text
+  http://<host>:9100/metrics
+  ```
+- Provides:
+  - CPU, memory, disk
+  - Network statistics
+  - Filesystem and kernel metrics
+
+---
 
 ### Blackbox Exporter
-- Installed on:
-  - Grafana VM only
-- Metrics endpoint:
-  - `http://grafana:9115/metrics`
-- Purpose:
-  - Active probing (ICMP, HTTP, DNS)
+
+- Deployed **only** on the Grafana VM
+- Default endpoint:
+  ```text
+  http://grafana:9115
+  ```
+- Used for:
+  - HTTP(S) endpoint checks
+  - ICMP reachability
+  - DNS resolution testing
 
 ---
 
-## Scrape Jobs Overview
+## Prometheus Configuration Location
 
-| Job Name | Target | Port | Purpose |
-|--------|--------|------|--------|
-| `node_exporter` | All hosts | 9100 | Host-level metrics |
-| `blackbox_icmp` | All hosts | 9115 | Ping / reachability |
-| `blackbox_http` | Selected services | 9115 | HTTP availability |
-| `blackbox_dns` | Internal DNS | 9115 | DNS resolution checks |
+Prometheus runs on the Grafana VM.
+
+Primary configuration file:
+
+```text
+/etc/prometheus/prometheus.yml
+```
+
+This file defines:
+
+- Global scrape settings
+- Static scrape targets
+- Blackbox probe jobs
 
 ---
 
-## Node Exporter Scrape Job
+## Scrape Configuration Overview
+
+### Global Settings
+
+Typical global configuration:
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+```
+
+---
+
+### Node Exporter Scrape Job
+
+Scrapes all Node Exporter endpoints:
 
 ```yaml
 scrape_configs:
   - job_name: "node_exporter"
     static_configs:
       - targets:
-          - bookstack:9100
-          - grafana:9100
-          - npm:9100
-          - pihole:9100
-          - pihole-backup:9100
-          - ca:9100
-          - pve:9100
-          - pbs:9100
-          - omv:9100
+          - <internal-host>:9100
+          - <internal-host>:9100
+          - <internal-host>:9100
+          - <internal-host>:9100
 ```
 
-### Notes
-- All targets correspond to hosts where `node_exporter` is deployed via Ansible
-- DNS resolution is handled by internal Pi-hole + Unbound
-- Metrics are scraped over the trusted LAN only
+Targets are explicitly listed to maintain deterministic visibility.
 
 ---
 
-## Blackbox Exporter — ICMP Probing
+### Blackbox Exporter Scrape Job
 
-```yaml
-  - job_name: "blackbox_icmp"
-    metrics_path: /probe
-    params:
-      module: [icmp]
-    static_configs:
-      - targets:
-          - bookstack
-          - grafana
-          - npm
-          - pihole
-          - pihole-backup
-          - ca
-          - pve
-          - pbs
-          - omv
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: grafana:9115
-```
-
-### What This Does
-- Uses the Blackbox Exporter on Grafana
-- ICMP probes every host
-- Allows visibility into:
-  - Reachability
-  - Packet loss
-  - Latency
-
----
-
-## Blackbox Exporter — HTTP Probing
+Blackbox probes are configured using relabeling:
 
 ```yaml
   - job_name: "blackbox_http"
@@ -124,106 +120,68 @@ scrape_configs:
       - targets:
           - https://internal.example
           - https://internal.example
-          - https://internal.example
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
       - target_label: __address__
-        replacement: grafana:9115
+        replacement: <internal-host>:9115
 ```
 
-### What This Checks
-- TLS availability
-- HTTP response codes
-- End-to-end service health via Nginx Proxy Manager
+This allows Prometheus to probe services **through** the Blackbox Exporter.
 
 ---
 
-## Blackbox Exporter — DNS Probing
+## Validation
 
-```yaml
-  - job_name: "blackbox_dns"
-    metrics_path: /probe
-    params:
-      module: [dns]
-    static_configs:
-      - targets:
-          - <internal-host>
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: __param_target
-      - source_labels: [__param_target]
-        target_label: instance
-      - target_label: __address__
-        replacement: grafana:9115
+### Verify Targets in Prometheus UI
+
+Open:
+
+```text
+https://internal.example/targets
 ```
 
-### Purpose
-- Confirms internal DNS resolution
-- Detects Pi-hole / Unbound failures early
+All targets should show:
+
+- **State:** UP
+- **Last Scrape:** recent
+- **No scrape errors**
 
 ---
 
-## Target Labeling Strategy
+### Manual Endpoint Verification
 
-- `instance` label is rewritten to match hostnames or FQDNs
-- Avoids raw IP-based labels in Grafana
-- Enables clean dashboards and alerts
-
----
-
-## Verification & Troubleshooting
-
-### Check Prometheus Targets
 ```bash
-http://<prometheus-host>:9090/targets
+curl http://<host>:9100/metrics | head
+curl https://internal.example/probe?target=https://internal.example
 ```
 
-### Verify Metrics Endpoints
-```bash
-curl http://host:9100/metrics
-curl http://grafana:9115/metrics
-```
+---
 
-### Common Failures
-| Symptom | Likely Cause |
-|------|------------|
-| Target DOWN | Exporter not running |
-| Connection refused | Firewall or service stopped |
-| No metrics | Wrong port or DNS issue |
+## Failure Modes
+
+| Issue | Cause | Resolution |
+|-----|------|-----------|
+| Target DOWN | Exporter not running | Restart exporter service |
+| Connection refused | Firewall blocked | Allow Prometheus → exporter |
+| Blackbox probe fails | TLS or DNS issue | Validate certificate and DNS |
+| No metrics in Grafana | Prometheus scrape failing | Check Prometheus targets |
 
 ---
 
 ## Security Considerations
 
-- Exporters bind to LAN interfaces only
-- No authentication on metrics endpoints (trusted network)
-- No TLS (internal-only design)
-- No credentials stored in Prometheus config
+- Exporters bind to **internal interfaces only**
+- Prometheus is not exposed publicly
+- Metrics are read-only and non-interactive
+- TLS termination is handled upstream by NPM when applicable
 
 ---
 
-## Maintenance
+## Summary
 
-### Add a New Host
-1. Add host to Ansible inventory
-2. Run exporter install playbook
-3. Add target to Prometheus scrape config
-4. Reload Prometheus
+Prometheus serves as the **central metrics aggregation layer**.
 
-### Reload Prometheus
-```bash
-systemctl reload prometheus
-```
+All exporters are deployed and managed via Ansible, while Prometheus performs deterministic scraping and exposes metrics to Grafana for visualization and observability.
 
----
-
-## Related Pages
-- Monitoring Exporters
-- Grafana Dashboards
-- Ansible Monitoring Automation
-- Internal DNS Architecture
-
----
+This design ensures consistency, traceability, and operational clarity across the monitoring stack.
