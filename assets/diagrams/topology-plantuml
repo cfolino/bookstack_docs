@@ -1,0 +1,188 @@
+@startuml
+left to right direction
+
+' ==================================================
+' GLOBAL STYLE — 33% ZOOM READABLE (DRAW.IO SAFE)
+' ==================================================
+skinparam backgroundColor #0b0f14
+skinparam defaultFontColor #e5e7eb
+skinparam shadowing false
+skinparam roundcorner 22
+skinparam linetype ortho
+
+' --- DENSITY (TIGHT TO OFFSET HUGE TEXT) ---
+skinparam nodesep 55
+skinparam ranksep 70
+skinparam padding 34
+
+' --- FONT SCALING (33% ZOOM TARGET) ---
+skinparam defaultFontSize 36
+skinparam titleFontSize 44
+
+skinparam ArrowColor #9ca3af
+
+skinparam cloud {
+  BackgroundColor #020617
+  BorderColor #9ca3af
+  FontColor #e5e7eb
+}
+
+skinparam node {
+  BackgroundColor #111827
+  BorderColor #6b7280
+  FontColor #e5e7eb
+  Padding 36
+}
+
+skinparam package {
+  BackgroundColor #020617
+  BorderColor #64748b
+  FontColor #e5e7eb
+  Padding 38
+}
+
+skinparam note {
+  BackgroundColor #0b0f14
+  BorderColor #334155
+  FontColor #e5e7eb
+  Padding 14
+}
+
+title Network Topology
+
+' ==================================================
+' EDGE / CORE
+' ==================================================
+cloud "Internet" as internet
+
+node "UDM Pro\nRouter • Firewall\nNAT | VPN" as udm
+node "USW-24\nCore Switch\n(L2 / L3)" as usw
+
+internet --> udm
+udm --> usw
+
+' ==================================================
+' CORE INFRASTRUCTURE
+' ==================================================
+node "Proxmox VE\n802.1Q Trunk\nVLANs 10 / 15 / 30" as pve #065f46
+node "OpenMediaVault\nBackup / Storage" as omv #064e3b
+
+usw --> pve
+usw --> omv
+
+' ==================================================
+' PROXMOX VLAN BRIDGES
+' ==================================================
+node "vmbr10\nVLAN 10" as vmbr10 #1e293b
+node "vmbr15\nVLAN 15" as vmbr15 #1e293b
+node "vmbr30\nVLAN 30" as vmbr30 #1e293b
+
+pve --> vmbr10
+pve --> vmbr15
+pve --> vmbr30
+
+' ==================================================
+' VLAN 10 — MANAGEMENT SERVICES (TRUSTED)
+' ==================================================
+package "VLAN 10 — Management Services (Trusted)" {
+  node "Ansible Control Node\nSemaphore" as ansible #065f46
+  node "Nginx Proxy Manager\nTLS Termination" as npm #065f46
+  node "Grafana + Prometheus\nMonitoring" as grafana #065f46
+  node "Internal CA\nPKI Authority" as ca #065f46
+  node "Pi-hole Primary\nAuthoritative DNS" as pihole1 #064e3b
+  node "Pi-hole Secondary\nDNS Replica" as pihole2 #064e3b
+}
+
+vmbr10 --> ansible
+vmbr10 --> npm
+vmbr10 --> grafana
+vmbr10 --> ca
+vmbr10 --> pihole1
+pihole1 <--> pihole2
+
+' ==================================================
+' TRUSTED DATA NETWORKS
+' ==================================================
+package "VLAN 15 — Backup (Trusted)" {
+  node "Proxmox Backup Server" as pbs #064e3b
+}
+
+package "VLAN 30 — Application Servers (Trusted)" {
+  node "BookStack\nDocumentation" as bookstack #065f46
+}
+
+package "VLAN 20 — Management Network (Trusted)" {
+  node "Management PC\n(Admin Workstation)" as mgmtpc #065f46
+}
+
+vmbr15 --> pbs
+vmbr30 --> bookstack
+usw --> mgmtpc
+pve -[#38bdf8]-> pbs
+
+' ==================================================
+' ACCESS / UNTRUSTED NETWORKS
+' ==================================================
+node "Wireless AP\nSSID ? VLAN Mapping" as ap #1e293b
+usw --> ap
+
+package "VLAN 25 — Media (Mixed Access)" {
+  node "Media Devices\n(Wired + Wi-Fi)" as media #7c2d12
+}
+
+package "VLAN 50 — IoT (Low Trust)" {
+  node "IoT Devices" as iot #7c2d12
+}
+
+package "VLAN 75 — Guest (Isolated)" {
+  node "Guest Clients" as guest #7f1d1d
+}
+
+package "VLAN 100 — Cameras (Isolated)" {
+  node "IP Camera" as camera1 #7f1d1d
+}
+
+ap --> guest
+ap --> iot
+ap -[#9ca3af,dashed]-> media
+usw --> media
+usw --> camera1
+
+' ==================================================
+' APPLICATION & MANAGEMENT FLOWS
+' ==================================================
+npm --> bookstack
+npm --> grafana
+npm --> pve
+npm --> pbs
+npm --> omv
+npm --> pihole1
+
+ansible -[#22c55e,dashed]-> pve
+ansible -[#22c55e,dashed]-> pbs
+ansible -[#22c55e,dashed]-> omv
+
+mgmtpc -[#22c55e,dashed]-> udm
+mgmtpc -[#22c55e,dashed]-> usw
+mgmtpc -[#22c55e,dashed]-> pve
+mgmtpc -[#22c55e,dashed]-> pbs
+mgmtpc -[#22c55e,dashed]-> omv
+mgmtpc -[#22c55e,dashed]-> ansible
+mgmtpc -[#22c55e,dashed]-> npm
+mgmtpc -[#22c55e,dashed]-> grafana
+mgmtpc -[#22c55e,dashed]-> ca
+mgmtpc -[#22c55e,dashed]-> pihole1
+
+' ==================================================
+' TEXT-ONLY LEGEND — 33% ZOOM LEGIBLE
+' ==================================================
+note as legend
+Legend:
+• Solid lines — Physical / L2 / L3
+• Dashed green — Admin / control access
+• Blue lines — HTTPS / application traffic
+• Green nodes — Trusted infrastructure
+• Red nodes — Isolated / untrusted
+end note
+
+@enduml
