@@ -2,7 +2,7 @@
 left to right direction
 
 ' ==================================================
-' GLOBAL STYLE — 33% ZOOM READABLE (DRAW.IO SAFE)
+' GLOBAL STYLE — 33% ZOOM READABLE (WIDTH OPTIMIZED)
 ' ==================================================
 skinparam backgroundColor #0b0f14
 skinparam defaultFontColor #e5e7eb
@@ -13,9 +13,9 @@ skinparam linetype ortho
 ' --- GLOBAL LINE THICKNESS (2x) ---
 skinparam ArrowThickness 2
 
-' --- DENSITY (TIGHT TO OFFSET HUGE TEXT) ---
+' --- DENSITY (WIDTH REDUCED ~33%) ---
 skinparam nodesep 55
-skinparam ranksep 70
+skinparam ranksep 46
 skinparam padding 34
 
 ' --- FONT SCALING (33% ZOOM TARGET) ---
@@ -58,16 +58,8 @@ title Network Topology
 ' ==================================================
 cloud "Internet" as internet
 
-node "UDM Pro\nRouter • Firewall\nNAT | VPN" as udm
-node "USW-24\nCore Switch\n(L2 / L3)" as usw
-
-internet --> udm
-udm --> usw
-
-' ==================================================
-' LEGEND — UPPER LEFT
-' ==================================================
-note left of internet
+' --- LEGEND (ANCHORED — TOP, NO WIDTH PENALTY) ---
+note top of internet
 Legend:
 • Solid lines — Physical / L2 / L3
 • Dashed green — Admin / control access
@@ -75,6 +67,12 @@ Legend:
 • Green nodes — Trusted infrastructure
 • Red nodes — Isolated / untrusted
 end note
+
+node "UDM Pro\nRouter • Firewall\nNAT | VPN" as udm
+node "USW-24\nCore Switch\n(L2 / L3)" as usw
+
+internet --> udm
+udm --> usw
 
 ' ==================================================
 ' CORE INFRASTRUCTURE
