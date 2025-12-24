@@ -10,6 +10,9 @@ skinparam shadowing false
 skinparam roundcorner 22
 skinparam linetype ortho
 
+' --- GLOBAL LINE THICKNESS (2x) ---
+skinparam ArrowThickness 2
+
 ' --- DENSITY (TIGHT TO OFFSET HUGE TEXT) ---
 skinparam nodesep 55
 skinparam ranksep 70
@@ -60,6 +63,18 @@ node "USW-24\nCore Switch\n(L2 / L3)" as usw
 
 internet --> udm
 udm --> usw
+
+' ==================================================
+' LEGEND — UPPER LEFT
+' ==================================================
+note left of internet
+Legend:
+• Solid lines — Physical / L2 / L3
+• Dashed green — Admin / control access
+• Blue lines — HTTPS / application traffic
+• Green nodes — Trusted infrastructure
+• Red nodes — Isolated / untrusted
+end note
 
 ' ==================================================
 ' CORE INFRASTRUCTURE
@@ -151,13 +166,15 @@ usw --> camera1
 ' ==================================================
 ' APPLICATION & MANAGEMENT FLOWS
 ' ==================================================
-npm --> bookstack
-npm --> grafana
-npm --> pve
-npm --> pbs
-npm --> omv
-npm --> pihole1
+' --- HTTPS / TLS TERMINATION (BLUE) ---
+npm -[#38bdf8]-> bookstack
+npm -[#38bdf8]-> grafana
+npm -[#38bdf8]-> pve
+npm -[#38bdf8]-> pbs
+npm -[#38bdf8]-> omv
+npm -[#38bdf8]-> pihole1
 
+' --- ADMIN / CONTROL (DASHED GREEN) ---
 ansible -[#22c55e,dashed]-> pve
 ansible -[#22c55e,dashed]-> pbs
 ansible -[#22c55e,dashed]-> omv
@@ -172,17 +189,5 @@ mgmtpc -[#22c55e,dashed]-> npm
 mgmtpc -[#22c55e,dashed]-> grafana
 mgmtpc -[#22c55e,dashed]-> ca
 mgmtpc -[#22c55e,dashed]-> pihole1
-
-' ==================================================
-' TEXT-ONLY LEGEND — 33% ZOOM LEGIBLE
-' ==================================================
-note as legend
-Legend:
-• Solid lines — Physical / L2 / L3
-• Dashed green — Admin / control access
-• Blue lines — HTTPS / application traffic
-• Green nodes — Trusted infrastructure
-• Red nodes — Isolated / untrusted
-end note
 
 @enduml
