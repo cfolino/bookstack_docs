@@ -1,7 +1,9 @@
 ---
+## Purpose
 
 This page defines the **global patching and reboot orchestration model** for the homelab.
-It explains **why different systems use different automation paths**, how dependencies are respected, and how Ansible enforces **safe execution order** without implicit assumptions.
+
+It explains **why different systems use different automation paths**, how dependencies are respected, and how Ansible enforces **safe execution order without implicit assumptions**.
 
 This is the authoritative reference for understanding **how all patching workflows fit together**.
 
@@ -13,7 +15,7 @@ The environment follows four non-negotiable principles:
 
 1. **Authority must be respected**
 2. **One reboot per system per cycle**
-3. **The hypervisor owns VM lifecycle**
+3. **Guest OS owns guest lifecycle**
 4. **Infrastructure before services**
 
 Every playbook and role exists to uphold these rules.
@@ -27,7 +29,7 @@ All systems fall into one of four orchestration classes:
 | Class | Examples | Reboot Authority |
 |-----|--------|----------------|
 | Hypervisor | Proxmox VE | Self |
-| Virtual Machines | PBS, Grafana, CA, Pi-hole | Proxmox |
+| Virtual Machines | PBS, Grafana, CA, Pi-hole | Guest OS (Proxmox recovery only) |
 | Bare Metal Services | OpenMediaVault | Self |
 | Network Devices | UniFi | API / SSH |
 
@@ -59,43 +61,52 @@ This ordering prevents:
 **Playbook:** `pve_patch.yml`
 **Authority:** Proxmox node itself
 **Reboot Method:** Direct `/sbin/reboot`
+**Cadence:** Quarterly
 
 Key characteristics:
 - ZFS health verification
 - Root filesystem space validation
-- Optional dry-run mode
+- Kernel-aware patching
 - Fire-and-forget reboot
 - Control node downtime is expected
 
-> The hypervisor is patched **alone** and **first**.
+> The hypervisor is patched **alone**, **first**, and **in isolation**.
+
+Proxmox reboots are **planned maintenance events**, not part of monthly VM patching.
 
 ---
 
 ## Virtual Machines (VMs)
 
 **Playbook:** `patch_all.yml`
-**Authority:** Proxmox VE
-**Reboot Method:** `qm stop / qm start`
+**Authority:** Guest OS
+**Reboot Method:** `ansible.builtin.reboot`
+**Verification:** SSH reachability
 
 Key characteristics:
-- Guest patching only
-- No in-guest reboots
-- Mandatory QEMU Guest Agent
-- Hypervisor-controlled lifecycle
-- SSH + QEMU socket validation
+- Guest-controlled reboot
+- Mandatory monthly reboot
+- No reliance on systemd readiness state
+- QEMU Guest Agent used for communication only
+- Proxmox used **only for recovery**
+
+Important rules:
+- VM uptime in Proxmox is **not** a reboot indicator
+- Guest OS uptime is authoritative
+- Hypervisor power control is a safety net, not the default
 
 Each VM is isolated:
 - One VM failure does not halt others
 - No cascading retries
-- Deterministic shutdown behavior
+- No stranded powered-off VMs
 
 ---
 
 ## Proxmox Backup Server (PBS)
 
 **Playbook:** `patch_pbs.yml`
-**Authority:** Proxmox VE
-**Reboot Method:** `qm reboot`
+**Authority:** Guest OS with Proxmox recovery
+**Reboot Method:** `ansible.builtin.reboot`
 
 Additional safeguards:
 - Active backup task detection
@@ -116,8 +127,8 @@ PBS is **never patched while backups are running**.
 
 Unique considerations:
 - Samba graceful shutdown
-- Optional Btrfs health checks
-- ICMP reachability validation
+- Filesystem health checks
+- ICMP and SSH reachability validation
 - Post-reboot service confirmation
 
 OMV is treated as **stateful storage**, not ephemeral compute.
@@ -128,14 +139,14 @@ OMV is treated as **stateful storage**, not ephemeral compute.
 
 **Playbook:** `issue_and_deploy_cert.yml`
 **Authority:** Ansible control node
-**Reboot Method:** Docker container restart only
+**Reboot Method:** None (service-level only)
 
 Characteristics:
 - No host reboot
 - CSR generation on CA
-- Signing without sudo
-- Certificate deployment to NPM
-- Targeted container restart
+- Certificate signing without sudo
+- Deployment to NPM
+- Targeted Docker container restarts only
 
 This workflow is **surgical and isolated** by design.
 
@@ -151,7 +162,7 @@ Handled separately because:
 - Service enablement
 - Port exposure validation
 
-Monitoring is deployed **after** patch stability is confirmed.
+Monitoring is deployed **after patch stability is confirmed**.
 
 ---
 
@@ -166,7 +177,7 @@ Characteristics:
 - API-driven reboots
 - Optional SSH fallback
 - Per-device execution
-- Explicit validation of uptime
+- Explicit uptime validation
 
 Network devices are **last** to avoid orphaning management access.
 
@@ -205,8 +216,8 @@ Each playbook is small, explicit, and auditable.
 This orchestration guarantees:
 
 - No double reboots
-- No guest-initiated VM shutdowns
-- No Proxmox API dependencies
+- No guest-initiated VM power-offs
+- No reliance on Proxmox uptime as a signal
 - No silent failures
 - No hidden side effects
 
@@ -232,9 +243,9 @@ This orchestration model prioritizes:
 
 - Predictability over speed
 - Authority over convenience
-- Explicit control over automation magic
+- Explicit control over automation behavior
 
-It is designed to scale **without surprises**.
+It is designed to scale **without surprises** and reflects real system ownership boundaries.
 
 ---
 
