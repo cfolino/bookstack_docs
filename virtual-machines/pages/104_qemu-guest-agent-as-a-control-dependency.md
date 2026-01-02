@@ -1,182 +1,203 @@
 ---
+## Purpose
 
-This page documents why the **QEMU Guest Agent (QGA)** is treated as a **mandatory dependency** for automation and VM lifecycle orchestration.
+This page explains how the **QEMU Guest Agent (QGA)** is used within the environment and why it is considered an important dependency for **safe automation and recovery**, while deliberately **not acting as a lifecycle authority**.
 
-QGA is not an optimization.
-It is a **control plane requirement**.
+QGA is treated as a **coordination and communication mechanism** between the guest and the hypervisor, not as a control mechanism for guest-initiated power actions.
 
 ---
 
-## Why the QEMU Guest Agent Matters
+## What QGA Provides
 
-From the perspective of automation, a virtual machine without QGA is:
+Within this environment, QGA serves as:
 
-- Operationally opaque
-- Unsafe to reboot unattended
-- Unable to reliably signal readiness
-- Prone to partial shutdown states
+- A communication channel between Proxmox and the guest OS
+- A mechanism for graceful shutdowns when initiated by the hypervisor
+- A source of guest introspection and state reporting
+- A safety requirement for hypervisor-driven recovery operations
 
-While a VM *can* run without QGA, **automation cannot safely manage it**.
+QGA is intentionally **not** used to make decisions about guest health, readiness, or reboot success.
+
+---
+
+## What QGA Does Not Control
+
+QGA is not used as:
+
+- A guest reboot trigger
+- A signal that system initialization has fully completed
+- A replacement for SSH-based verification
+- A general-purpose automation gate
+
+The guest operating system remains responsible for its own lifecycle decisions.
+
+---
+
+## Why QGA Is Still Required
+
+From a hypervisor perspective, a VM without QGA:
+
+- Is harder to shut down cleanly from Proxmox
+- Is more difficult to recover if it becomes unresponsive
+- May require forced power-off actions during maintenance
+
+While a VM can function without QGA, recovery operations are more predictable and safer when the agent is present and healthy.
 
 ---
 
 ## Role of QGA in This Environment
 
-QGA is relied upon for:
+QGA is used for:
 
-- Clean shutdown signaling
-- Accurate reboot completion
-- Guest readiness verification
-- Hypervisor ↔ guest coordination
+- Graceful shutdowns initiated by Proxmox
+- Hypervisor-side lifecycle actions during recovery
+- Guest state inspection
+- Coordination during exceptional situations
 
-Without QGA, Proxmox cannot reliably:
-- Know when a VM has actually shut down
-- Know when the guest OS is ready after boot
-- Perform safe lifecycle transitions during patching
+QGA is not used for:
+
+- Guest-initiated reboots
+- Patch success validation
+- Determining system readiness after boot
+- Blocking or allowing automation progress
 
 ---
 
 ## Enforcement Strategy
 
-QGA is not assumed to be present.
+QGA presence and health are verified before any **hypervisor-level lifecycle action** is attempted.
 
-It is **explicitly enforced** by automation before any lifecycle action occurs.
-
-This enforcement is handled by the role:
+This verification is handled by:
 
 ```
 roles/qemu_ga_fix
 ```
 
----
-
-## What the `qemu_ga_fix` Role Guarantees
-
-The role ensures the following invariants:
-
-1. **QEMU Guest Agent package is installed**
-2. **Systemd service is enabled and running**
-3. **Shutdown hook is present**
-4. **Systemd daemon state is correct**
-5. **Virtio socket exists**
-6. **Agent responds before lifecycle actions proceed**
-
-If any of these checks fail, automation **halts immediately**.
+The role ensures that Proxmox can safely interact with the guest if recovery becomes necessary.
 
 ---
 
-## Shutdown Hook Enforcement
+## What the `qemu_ga_fix` Role Ensures
 
-A systemd drop-in is installed:
+The role maintains the following conditions:
 
-```
-/etc/systemd/system/qemu-guest-agent.service.d/notify.conf
-```
+1. The QEMU Guest Agent package is installed
+2. The agent service is enabled and running
+3. No guest-side shutdown hooks are configured
+4. Systemd state is consistent
+5. The virtio communication socket exists
+6. The agent responds to Proxmox queries
 
-Purpose:
-- Ensure Proxmox receives a shutdown notification
-- Prevent forced power-off scenarios
-- Avoid filesystem inconsistency during reboots
-
-This is critical during patch-driven restarts.
+If these conditions are not met, automation avoids hypervisor-driven lifecycle actions.
 
 ---
 
-## Readiness Verification
+## Guest-Initiated Shutdown Hooks
 
-After restarts, automation waits for:
+Earlier designs experimented with guest-side shutdown hooks tied to the QGA service lifecycle. In practice, these hooks introduced unintended behavior, including shutdowns triggered during service restarts or package upgrades.
+
+For this reason, the environment avoids configurations such as:
 
 ```
-/dev/virtio-ports/org.qemu.guest_agent.0
+ExecStopPost=/usr/bin/qemu-ga --shutdown
 ```
 
-This socket confirms:
-- The guest OS is fully booted
-- The agent is active
-- Proxmox ↔ guest communication is established
-
-SSH availability alone is **not sufficient**.
+The guest OS does not request shutdown through QGA.
+Shutdown requests originate from Proxmox when required.
 
 ---
 
-## Why SSH Is Not Enough
+## Readiness and Health Verification
 
-SSH only proves:
-- The network stack is up
-- A daemon is listening
+### Guest Readiness
 
-It does **not** guarantee:
-- System services are stable
-- Init has completed
-- Shutdown signaling will work
+Guest health and readiness are determined using:
 
-QGA provides **hypervisor-level confirmation**, which SSH cannot.
+- SSH reachability
+- Successful command execution
+- Guest OS uptime
+
+These signals are sufficient to determine whether the system is operational for automation purposes.
+
+### Hypervisor Readiness
+
+QGA socket availability confirms that:
+
+- Proxmox can communicate with the guest
+- Hypervisor-initiated actions can be performed safely if needed
+
+These two concerns are intentionally separated.
+
+---
+
+## Why SSH Remains the Primary Signal
+
+SSH confirms that:
+
+- The network stack is functional
+- User-space services are operational
+- The system can accept automation tasks
+
+Systemd state and QGA availability are supplementary indicators and are not treated as authoritative signals of guest readiness.
 
 ---
 
 ## Interaction With VM Lifecycle Control
 
-QGA is a prerequisite for:
+QGA is required for:
 
-- `proxmox_vm_restart`
-- `patch_all.yml`
-- `patch_ansible_node.yml`
-- `patch_pbs.yml`
+- Hypervisor-initiated shutdowns
+- Recovery workflows such as `proxmox_vm_restart`
+- Avoiding forced power-off operations
 
-Lifecycle actions **do not proceed** unless QGA is confirmed healthy.
+QGA is not required for:
 
-This prevents:
-- Half-rebooted VMs
-- Hung shutdowns
-- Orphaned processes
-- Proxmox task deadlocks
+- Guest-initiated reboots
+- Routine patching
+- Automation flow control
 
 ---
 
-## Failure Behavior (Intentional)
+## Failure Handling
 
-If QGA is missing or broken:
+If QGA is unavailable or unhealthy:
 
-- Automation fails fast
-- No reboot is attempted
-- No patching continues
-- Operator intervention is required
+- Guest patching may still proceed
+- Hypervisor recovery actions are avoided
+- Automation fails early only when hypervisor control would otherwise be required
 
-This is intentional and preferable to undefined state.
+This approach favors predictable failure modes over forced intervention.
 
 ---
 
-## Why This Is a Hard Requirement
+## Design Rationale
 
-Treating QGA as optional leads to:
+Separating responsibilities yields clearer behavior:
 
-- Unreliable unattended patching
-- Non-deterministic VM state
-- Increased recovery time
-- Higher risk of data corruption
+- Guest OS controls its own lifecycle
+- Proxmox controls recovery actions
+- QGA enables coordination without dictating intent
 
-Treating QGA as mandatory yields:
-
-- Predictable lifecycle control
-- Safe delegation
-- Clean orchestration boundaries
+This boundary reduces unintended side effects and simplifies troubleshooting.
 
 ---
 
 ## Summary
 
-- QEMU Guest Agent is a **control dependency**
-- It is enforced, not assumed
-- Lifecycle automation depends on it
-- SSH alone is insufficient
-- Fail-fast behavior is intentional
+- QEMU Guest Agent is required for safe hypervisor interaction
+- QGA does not act as a reboot authority
+- Guest OS decisions are verified via SSH
+- Hypervisor recovery depends on QGA availability
+- Guest-side shutdown hooks are intentionally avoided
 
-Any VM without a healthy QGA instance is **not eligible for automation**.
+This model balances safety, clarity, and operational predictability.
 
 ---
 
 ## Related Pages
 
-- Proxmox-Driven VM Lifecycle Control
-- Patch & Reboot Orchestration Strategy
-- Inventory & Grouping Strategy
+- VM Lifecycle & Reboot Semantics
+- Proxmox VE Host Patching
+- Bulk Ubuntu VM Patching
+- Global Patching Orchestration Model
+---
