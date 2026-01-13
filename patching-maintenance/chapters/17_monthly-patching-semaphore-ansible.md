@@ -1,2 +1,0 @@
-# monthly patching - semaphore + ansible
-

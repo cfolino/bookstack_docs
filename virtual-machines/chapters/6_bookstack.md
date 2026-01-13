@@ -1,3 +1,0 @@
-# bookstack
-
-Centralized documentation management.
