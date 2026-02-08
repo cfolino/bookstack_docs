@@ -1,5 +1,5 @@
 ## Overview
-This document describes the creation of a **Proxmox VM golden image** based on **Debian 12 (Bookworm)**. It is hardened, stripped of unique identifiers, and optimized for the `cfolino.com` infrastructure, ensuring seamless integration with Ansible and Semaphore.
+This document describes the creation of a **Proxmox VM golden image** based on **Debian 13 (Trixie)**. It is hardened, stripped of unique identifiers, and optimized for the `cfolino.com` infrastructure, ensuring seamless integration with Ansible and Semaphore.
 
 ---
 
@@ -7,10 +7,10 @@ This document describes the creation of a **Proxmox VM golden image** based on *
 
 | Item | Value |
 | :--- | :--- |
-| **VM ID** | 9001 |
-| **Name** | debian-12-golden |
-| **OS** | Debian 12 (Bookworm) |
-| **Install Method** | ISO Netinst (`debian-12.x.x-amd64-netinst.iso`) |
+| **VM ID** | 9002 |
+| **Name** | debian-13-golden |
+| **OS** | Debian 13 (Trixie) - Testing/Stable |
+| **Install Method** | ISO Netinst (`debian-testing-amd64-netinst.iso`) |
 | **Primary User** | `cfolino` |
 | **Sudo** | Passwordless |
 | **SSH** | Keys + password (break-glass) |
@@ -21,7 +21,8 @@ This document describes the creation of a **Proxmox VM golden image** based on *
 
 ## Step 1 — Base Installation (ISO)
 
-1. **Software Selection:** - [ ] Debian desktop environment
+1. **Software Selection:**
+   - [ ] Debian desktop environment
    - [ ] GNOME
    - [x] SSH server
    - [x] standard system utilities
@@ -47,7 +48,7 @@ exit
 
 ## Step 3 — QEMU Guest Agent
 
-Install the agent and enable the service for Proxmox communication.
+Install the agent and enable the service for Proxmox communication (shutdown/reboot/IP display).
 
 ```bash
 sudo apt update && sudo apt install -y qemu-guest-agent
@@ -56,9 +57,10 @@ sudo systemctl enable --now qemu-guest-agent
 
 **Verification (from Proxmox Host):**
 ```bash
-qm set 9001 --agent enabled=1
-qm agent 9001 ping
+qm set 9002 --agent enabled=1
+qm agent 9002 ping
 ```
+*(Result should be generic JSON output or empty success, not an error).*
 
 ---
 
@@ -95,11 +97,13 @@ sudo systemctl reload ssh
 ## Step 5 — Baseline System Tweaks
 
 ### SSD TRIM
+Ensure the underlying storage is notified of deleted blocks (crucial for ZFS/Ceph backing).
 ```bash
 sudo systemctl enable --now fstrim.timer
 ```
 
 ### Journald Limits
+Prevent logs from filling the small root disk.
 Edit `/etc/systemd/journald.conf`:
 ```ini
 SystemMaxUse=200M
@@ -113,7 +117,8 @@ sudo systemctl restart systemd-journald
 
 ## Step 6 — Baseline Tooling (Standard Fleet)
 
-Install necessary packages for `cfolino.com` observability and management:
+Install necessary packages for `cfolino.com` observability and management.
+*Note: `net-tools` is deprecated but included for legacy `ifconfig`/`netstat` support. Primary networking uses `iproute2`.*
 
 ```bash
 sudo apt install -y \
@@ -125,18 +130,37 @@ sudo apt install -y \
 
 ---
 
-## Step 7 — Disable Unwanted Automation
+## Step 7 — Remove Conflicting Automation
 
-Ensure Ansible remains the source of truth by removing `cloud-init` (if present) and `unattended-upgrades`.
+We manage Day-0 networking manually. Remove `cloud-init` to prevent it from regenerating network configs or machine-IDs on boot.
 
 ```bash
-sudo apt purge -y cloud-init unattended-upgrades
+sudo apt purge -y cloud-init cloud-init-ramfs-dyn-netconf unattended-upgrades
 sudo apt autoremove -y
+# Ensure no residual config files remain
+sudo rm -rf /etc/cloud/
+sudo rm -rf /var/lib/cloud/
 ```
 
 ---
 
-## Step 8 — Template Hygiene (Critical)
+## Step 8 — Reset Networking to DHCP
+
+Ensure the interface is clean and set to DHCP for the first boot of any clone.
+Edit `/etc/network/interfaces`:
+
+```auto
+auto lo
+iface lo inet loopback
+
+allow-hotplug ens18
+iface ens18 inet dhcp
+```
+*(Adjust `ens18` if your VM uses a different driver, but VirtIO usually maps to `ens18`)*.
+
+---
+
+## Step 9 — Template Hygiene (Critical)
 
 This ensures that cloned VMs do not suffer from IP conflicts or duplicate IDs in logs.
 
@@ -148,7 +172,7 @@ sudo apt clean
 sudo journalctl --rotate
 sudo journalctl --vacuum-time=1s
 
-# Reset Machine ID
+# Reset Machine ID (Critical for DHCP and Systemd uniqueness)
 sudo truncate -s 0 /etc/machine-id
 sudo rm -f /var/lib/dbus/machine-id
 sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
@@ -159,11 +183,11 @@ history -c && sudo shutdown -h now
 
 ---
 
-## Step 9 — Convert to Template
+## Step 10 — Convert to Template
 
 On the Proxmox Host:
 ```bash
-qm template 9001
+qm template 9002
 ```
 
 ---
@@ -175,9 +199,9 @@ qm template 9001
 | **Guest Agent** | Enabled + running |
 | **SSH Keys** | Authorized for `cfolino` |
 | **Password SSH** | Enabled (Break-glass) |
-| **Root SSH** | Disabled |
+| **Cloud-Init** | **PURGED** (Manual Day-0 required) |
 | **CA Trust** | Ready for internal CA |
 | **Machine ID** | Truncated (Unique on boot) |
 
 **Status:** Golden Image Complete
-**Template:** `debian-12-golden`
+**Template:** `debian-13-golden`

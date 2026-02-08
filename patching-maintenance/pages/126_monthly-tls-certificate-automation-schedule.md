@@ -64,6 +64,7 @@ All times below are **local system time**.
 | OMV    | `0  4 10 * *`   | 04:00 |
 | PVE    | `15 4 10 * *`   | 04:15 |
 | Pi-hole| `30 4 10 * *`   | 04:30 |
+| UDM    | `45 4 10 * *`   | 04:45 |
 
 **Notes**
 - OMV first to ensure storage availability
