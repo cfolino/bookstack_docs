@@ -7,9 +7,11 @@ Automation begins at Day-1.
 ---
 
 ## Preconditions
-- VM cloned from `debian-13-golden`
-- VM powered on
-- Network reachable (DHCP or temporary IP)
+- **Template:** VM cloned from `debian-13-golden`
+- **Default Credentials:**
+    - User: `cfolino`
+    - Password: `cfolino`
+- **Network:** VM powered on and reachable via DHCP (or temporary IP)
 
 ---
 
@@ -26,8 +28,11 @@ Start the VM.
 
 ## Step 2 — Initial SSH Access (Break-Glass User)
 
+Login using the default "Day-0" credentials:
+
 ```bash
 ssh cfolino@<VM_IP>
+# Password: cfolino
 ```
 
 Verify:
@@ -72,6 +77,7 @@ Networking changes are **not automated** at this stage to avoid:
 ### Step 4.1 — Proxmox Network Placement (Host Side)
 
 Before configuring the guest OS, ensure the VM is attached to the **correct Proxmox bridge**.
+The cluster uses a **Single VLAN-Aware Bridge (`vmbr0`)**. Do **not** change the bridge. Instead, apply the correct **VLAN Tag**.
 
 Examples:
 - `tag=15` → backup network
@@ -82,14 +88,14 @@ Examples:
 qm config <VMID> | grep net0
 ```
 
-#### Update bridge if required
+#### Update VLAN Tag if required
 ```bash
 qm set <VMID> --net0 virtio,bridge=vmbr0,tag=30
 ```
 
-If the bridge is changed:
+If the tag is changed:
 - Power-cycle the VM (**stop → start**, not reboot)
-- Do **not** proceed until the VM boots cleanly on the correct bridge.
+- Do **not** proceed until the VM boots cleanly.
 
 ### Step 4.2 — Guest Network Verification (Initial, DHCP)
 
@@ -177,6 +183,29 @@ Debian 13 uses the standard `/etc/network/interfaces` file.
    ```
 
    *Troubleshooting Note: If you lose access, use the Proxmox Console.*
+
+### Step 4.5 — Disable Password Authentication (Hardening)
+
+Once the static IP is verified and SSH keys are functioning (via Ansible or manual injection), **disable password login immediately**.
+
+1. **Edit SSH Configuration:**
+   ```bash
+   sudo nano /etc/ssh/sshd_config
+   ```
+
+2. **Change `PasswordAuthentication` to `no`:**
+   ```ssh
+   PasswordAuthentication no
+   PermitRootLogin no
+   PubkeyAuthentication yes
+   ```
+
+3. **Restart SSH Service:**
+   ```bash
+   sudo systemctl restart ssh
+   ```
+
+   *Note: Ensure you have added your SSH key to `~/.ssh/authorized_keys` before restarting, or you will be locked out.*
 
 ---
 
